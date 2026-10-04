@@ -3,7 +3,7 @@
 //   next()  choose(index)  openDocs(docIds)  openArchive()  openMenu()  exitCase()
 
 import { el } from "../dom.js";
-import { wave, scribble, clipIcon, chapterHeader, turnThePage, paragraph, verdictMark } from "../decorations.js";
+import { wave, scribble, clipIcon, chapterHeader, turnThePage, paragraph } from "../decorations.js";
 
 const NUMERALS = ["i.", "ii.", "iii.", "iv.", "v.", "vi."];
 
@@ -24,7 +24,6 @@ function textView({ session, actions }) {
 
   if (session.showsChoiceBubble()) {
     parts.push(el("div", { class: "picked" }, [el("span", {}, "→"), el("span", {}, session.lastChoice)]));
-    parts.push(verdictMark(session.lastJudge));
   }
   parts.push(el("div", { class: "prose" }, paragraphs.map(paragraph)));
   if (scene.gain) {

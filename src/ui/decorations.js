@@ -24,20 +24,6 @@ export function scribble() {
   ]);
 }
 
-/** 先生の赤ペン：本文の右上に大きく、書き順どおりにシュッと書く（○ 正解 / △ 惜しい / × ちがう） */
-const VERDICTS = {
-  o: { label: "正解", strokes: ["M 96 14 C 144 20, 156 80, 130 118 C 104 152, 44 150, 20 112 C 0 76, 24 24, 76 16 C 92 14, 108 18, 118 28"] },
-  tri: { label: "惜しい", strokes: ["M 82 12 C 102 52, 124 94, 146 134 C 104 138, 60 137, 16 134 C 38 96, 60 56, 86 10"] },
-  x: { label: "ちがう", strokes: ["M 28 26 C 66 66, 100 102, 134 138", "M 136 24 C 100 62, 64 100, 24 140"] },
-};
-
-export function verdictMark(judge) {
-  const v = VERDICTS[judge];
-  if (!v) return null;
-  return svg("svg", { class: `verdict verdict-${judge}`, viewBox: "0 0 160 160", role: "img", "aria-label": v.label },
-    v.strokes.map((d, i) => svg("path", { d, pathLength: "1", style: `animation-delay:${0.15 + i * 0.22}s` })));
-}
-
 /** 資料を見るボタンのクリップ */
 export function clipIcon() {
   return svg("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", stroke: NAVY, "stroke-width": "1.3", "stroke-linecap": "round", "aria-hidden": "true" }, [

@@ -393,7 +393,6 @@ choice("q4_2", "c4", {
   prompt: "どうするか。",
   docs: ["demandLetter", "committee"],
   retry: false,
-  graded: false,
   next: "c4_end",
   options: [
     { label: "調査範囲の穴を突く追加レポートを出す", judge: "o", flags: ["addReport"], text: ["事実だけを並べた。「調査されていない取引がある」。それ以上は書かなかった。"] },
@@ -460,7 +459,6 @@ choice("q5_3", "c5", {
   prompt: "どう返すか。",
   docs: ["mail", "server"],
   retry: false,
-  graded: false,
   next: "c5_end",
   options: [
     {

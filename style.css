@@ -312,7 +312,7 @@ button { font: inherit; color: inherit; }
 
 /* ---------- 結果 ---------- */
 
-.picked { font-family: var(--hand); font-size: 15px; color: var(--navy); display: flex; gap: 8px; line-height: 1.6; padding-right: 96px; }
+.picked { font-family: var(--hand); font-size: 15px; color: var(--navy); display: flex; gap: 8px; line-height: 1.6; }
 
 /* 本文に差し込む株価チャート */
 .ticker {
@@ -353,30 +353,7 @@ button { font: inherit; color: inherit; }
 .ticker-label { font-family: var(--hand); color: var(--muted); display: flex; gap: 8px; }
 .ticker-note { color: var(--tick); }
 
-/* 先生の赤ペン：本文の右上に大きく重ねて、書き順どおりに走らせる */
 .tap-area { position: relative; }
-.verdict {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 150px;
-  height: 150px;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-  transform: rotate(-8deg);
-}
-.verdict path {
-  fill: none;
-  stroke: var(--red);
-  stroke-width: 1.6; /* 調査一覧の丸囲みと同じ太さ */
-  vector-effect: non-scaling-stroke;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: pen 0.32s cubic-bezier(0.5, 0, 0.2, 1) forwards;
-}
-.verdict-x { width: 130px; height: 130px; }
 @keyframes pen { to { stroke-dashoffset: 0; } }
 
 .inference {
@@ -521,6 +498,6 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .prose p.reveal, .inference { opacity: 1; }
-  .verdict path, .ticker-line { stroke-dashoffset: 0; }
+  .ticker-line { stroke-dashoffset: 0; }
   .ticker-dot { opacity: 1; }
 }

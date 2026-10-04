@@ -31,7 +31,6 @@ export class CaseSession {
       docs: [],
       tried: {},
       lastChoice: null,
-      lastJudge: null,
       bubble: false,
       ending: null,
     };
@@ -48,8 +47,6 @@ export class CaseSession {
   get seenDocs() { return [...this.#state.docs]; }
   get ending() { return this.#state.ending; }
   get lastChoice() { return this.#state.lastChoice; }
-  /** 直前の選択の判定（"o" | "tri" | "x"）。正解のない分岐では null */
-  get lastJudge() { return this.#state.lastJudge; }
 
   hasFlag(name) { return this.#state.flags.includes(name); }
   hasInference(id) { return this.#state.inferences.includes(id); }
@@ -92,7 +89,6 @@ export class CaseSession {
     const { option } = entry;
     const s = this.#state;
     s.lastChoice = option.label;
-    s.lastJudge = scene.graded === false ? null : option.judge;
     s.bubble = !!option.bubble;
     s.confidence += option.delta || 0;
     for (const f of option.flags || []) if (!s.flags.includes(f)) s.flags.push(f);

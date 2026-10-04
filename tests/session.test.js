@@ -109,21 +109,6 @@ test("分岐で出てきた資料を覚え、古い snapshot にも対応する"
   assert.deepEqual(new CaseSession(def, { conditions, snapshot: old }).seenDocs, ["d2", "d1"]);
 });
 
-test("選んだ答えの判定を返し、採点しない分岐では null", () => {
-  const def = sampleCase();
-  const s = new CaseSession(def, { conditions });
-  s.advance();
-  s.choose(0);
-  assert.equal(s.lastJudge, "x");
-  s.advance();
-  s.choose(1);
-  assert.equal(s.lastJudge, "o");
-  const ungraded = { ...def, scenes: { ...def.scenes, q2: { ...def.scenes.q2, graded: false } } };
-  const u = new CaseSession(ungraded, { conditions, snapshot: { ...CaseSession.initialState(def), scene: "q2", inferences: ["A"] } });
-  u.choose(0);
-  assert.equal(u.lastJudge, null);
-});
-
 test("株価チャートの段落は、毎回同じ形で、前日終値と終値を必ず通る", () => {
   const a = stockChart({ name: "N", keys: [4800, 3900, 3840], seed: 3 });
   const b = stockChart({ name: "N", keys: [4800, 3900, 3840], seed: 3 });
