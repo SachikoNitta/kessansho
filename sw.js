@@ -1,6 +1,36 @@
-// オフラインでも遊べるよう、アプリ本体をキャッシュする。
-const CACHE = "kessansho-v2";
-const ASSETS = ["./", "index.html", "style.css", "js/story.js", "js/engine.js", "manifest.webmanifest", "icons/icon.svg"];
+// オフラインでも遊べるよう、アプリ本体と同梱ケースをすべてキャッシュする。
+// ケースはアプリに同梱し、アップデートで更新する。更新を出すときは CACHE の版を上げる。
+// ASSETS の漏れは tests/offline.test.js が検出する。
+const CACHE = "kessansho-v3";
+const ASSETS = [
+  "./",
+  "index.html",
+  "style.css",
+  "manifest.webmanifest",
+  "icons/icon.svg",
+  "src/main.js",
+  "src/core/contracts.js",
+  "src/core/conditions.js",
+  "src/core/session.js",
+  "src/core/progress.js",
+  "src/core/preferences.js",
+  "src/core/validate.js",
+  "src/authoring/case-builder.js",
+  "src/adapters/local-storage-store.js",
+  "src/adapters/memory-store.js",
+  "src/adapters/bundled-case-repository.js",
+  "src/ui/app.js",
+  "src/ui/dom.js",
+  "src/ui/decorations.js",
+  "src/ui/doc-renderers.js",
+  "src/ui/sheet.js",
+  "src/ui/sheets.js",
+  "src/ui/screens/cover.js",
+  "src/ui/screens/cases.js",
+  "src/ui/screens/scene-views.js",
+  "cases/catalog.js",
+  "cases/nulo/case.js",
+];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
