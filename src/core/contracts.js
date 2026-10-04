@@ -23,7 +23,7 @@
 /**
  * @typedef {TextScene | ChoiceScene | RouteScene | EndScene} Scene
  * @typedef {{ type: "text", chapter: string, paragraphs: Array<string|Paragraph>, next: string, gain?: string|null, showChoice?: boolean }} TextScene
- * @typedef {{ text?: string, muted?: boolean, emphasis?: boolean, ifFlag?: string, doc?: string, chart?: { name: string, label?: string, note?: string, points: number[] } }} Paragraph
+ * @typedef {{ text?: string, muted?: boolean, emphasis?: boolean, ifFlag?: string, doc?: string, chart?: { name: string, label?: string, note?: string, points: number[] } | { kind: "quote", name: string, label?: string, note?: string, close: number, limit: number, sell: number, buy: number } }} Paragraph
  *   doc … 本文に資料を差し込む（資料 id）。差し込んだ資料は「これまでの資料」にも入る
  *   graph … 本文にグラフを差し込む（src/ui/charts.js の spec）
  *   photo … 本文に挿し絵を差し込む（{ illustration | image, caption }）。資料ではないので「これまでの資料」には入らない

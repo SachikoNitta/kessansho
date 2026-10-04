@@ -54,6 +54,27 @@ function site(doc) {
   ])];
 }
 
+/** 公開したレポートのスクリーンショット（ブラウザの枠に、見出し・要旨・結論・注記） */
+function report(doc) {
+  return [el("div", { class: "site report" }, [
+    el("div", { class: "site-bar", "aria-hidden": "true" }, [
+      el("span", { class: "site-dots" }, [el("i"), el("i"), el("i")]),
+      el("span", { class: "site-url" }, doc.url),
+    ]),
+    el("div", { class: "report-page" }, [
+      el("div", { class: "report-mast" }, [
+        el("span", { class: "report-brand" }, doc.publisher),
+        el("span", { class: "report-date" }, doc.date),
+      ]),
+      el("span", { class: "report-tag" }, doc.tag),
+      el("div", { class: "report-title" }, doc.title),
+      el("ol", { class: "report-points" }, doc.points.map((pt) => el("li", {}, pt))),
+      el("div", { class: "report-conclusion" }, [el("b", {}, "結論　"), doc.conclusion]),
+      doc.disclaimer && el("div", { class: "report-disclaimer" }, doc.disclaimer),
+    ]),
+  ])];
+}
+
 /** 写真：ポラロイド風の枠。image（画像のパス）があれば画像、なければ illustration のスケッチ */
 function photo(doc) {
   return [photoFrame(doc)];
@@ -66,8 +87,8 @@ function graph(doc) {
 
 /** @returns {Object<string, (doc: object, ctx: { inference: (id: string) => string|null }) => Node[]>} */
 export function createDocRenderers(extra = {}) {
-  return { table, article, inferences, site, photo, graph, ...extra };
+  return { table, article, inferences, site, report, photo, graph, ...extra };
 }
 
 /** 標準で表示できる資料の種類（ケースの検証に使う） */
-export const DOC_TYPES = ["table", "article", "inferences", "site", "photo", "graph"];
+export const DOC_TYPES = ["table", "article", "inferences", "site", "report", "photo", "graph"];

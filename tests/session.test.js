@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createCaseBuilder, stockChart } from "../src/authoring/case-builder.js";
+import { createCaseBuilder, stockChart, limitQuote } from "../src/authoring/case-builder.js";
 import { CaseSession } from "../src/core/session.js";
 import { createConditionEvaluator } from "../src/core/conditions.js";
 
@@ -118,6 +118,13 @@ test("株価チャートの段落は、毎回同じ形で、前日終値と終�
   assert.deepEqual(JSON.parse(JSON.stringify(a)), a);
   const flat = stockChart({ name: "N", keys: [4800, 4100, 4100], noise: 0 });
   assert.ok(flat.chart.points.slice(-5).every((v) => v === 4100));
+});
+
+test("値がつかなかった日の段落は、JSON にできる気配値と板のデータになる", () => {
+  const q = limitQuote({ name: "N", close: 4800, limit: 4100, sell: 2846500, buy: 3200 });
+  assert.equal(q.chart.kind, "quote");
+  assert.deepEqual(JSON.parse(JSON.stringify(q)), q);
+  assert.throws(() => limitQuote({ name: "N", close: 4800, limit: 4800, sell: 1, buy: 1 }));
 });
 
 test("本文に差し込んだ資料も、出てきた資料として覚える", () => {

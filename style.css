@@ -352,6 +352,15 @@ button { font: inherit; color: inherit; }
 .site-lead { font-size: 12px; line-height: 1.7; color: #3B414D; }
 .site-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .site-badges span { font-size: 10px; font-weight: 700; color: #2450D8; background: #E6ECFF; border-radius: 999px; padding: 3px 9px; }
+.report-page { padding: 12px 16px 16px; background: #FFFFFF; color: #1F232B; display: flex; flex-direction: column; gap: 8px; }
+.report-mast { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 8px; border-bottom: 2px solid #1F232B; }
+.report-brand { font-weight: 800; font-size: 14px; letter-spacing: 0.08em; }
+.report-date { font-size: 10px; color: #5A5F6B; }
+.report-tag { align-self: flex-start; font-size: 10px; font-weight: 700; color: #8E2B1E; border: 1px solid #8E2B1E; padding: 1px 6px; }
+.report-title { font-size: 18px; font-weight: 800; line-height: 1.4; }
+.report-points { margin: 0; padding-left: 1.4em; font-size: 12px; line-height: 1.7; color: #3B414D; display: flex; flex-direction: column; gap: 4px; }
+.report-conclusion { font-size: 12px; line-height: 1.7; padding: 8px 10px; background: #F4F1EA; border-left: 3px solid #1F232B; }
+.report-disclaimer { font-size: 9.5px; line-height: 1.6; color: #6B707B; }
 .site-cta { margin-top: 4px; font-size: 12px; font-weight: 700; color: #FFFFFF; background: #2450D8; border-radius: 6px; padding: 7px 14px; }
 
 /* 写真：ポラロイド風の枠に、マスキングテープ */
@@ -454,7 +463,8 @@ button { font: inherit; color: inherit; }
 .ticker-name { font-family: var(--hand); font-size: 13px; color: var(--muted); }
 .ticker-now { font-size: 26px; font-weight: 700; color: var(--tick); line-height: 1.1; }
 .ticker-now small { font-size: 13px; margin-left: 2px; }
-.ticker-chart { width: 100%; height: 92px; overflow: visible; }
+.ticker-chart { width: 100%; height: 104px; overflow: visible; }
+.ticker-past { fill: none; stroke: var(--muted); stroke-width: 1.4; stroke-linejoin: round; opacity: 0.55; vector-effect: non-scaling-stroke; }
 .ticker-base { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
 .ticker-line {
   fill: none;
@@ -471,8 +481,32 @@ button { font: inherit; color: inherit; }
 @keyframes dot { to { opacity: 1; } }
 .ticker-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 13px; }
 .ticker-chg { color: var(--tick); font-weight: 700; }
-.ticker-label { font-family: var(--hand); color: var(--muted); display: flex; gap: 8px; }
-.ticker-note { color: var(--tick); }
+.ticker-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: -2px; }
+.ticker-end-last { color: var(--tick); font-weight: 700; opacity: 0; animation: dot 0.3s ease forwards; }
+.ticker-note { font-family: var(--hand); color: var(--tick); }
+
+/* 値がつかなかった日：気配値・点線・板 */
+.quote-badge {
+  display: inline-block; vertical-align: 5px; margin-right: 8px; padding: 1px 6px;
+  font-size: 12px; font-weight: 700; border: 1.5px solid var(--tick); color: var(--tick); border-radius: 3px;
+}
+/* 落ちる矢印はペンで引き、気配の点線（売買なし）は左から右へ一日ぶん伸ばす */
+.quote-drop {
+  fill: none; stroke: var(--tick); stroke-width: 2.2; vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: pen 0.55s cubic-bezier(0.5, 0, 0.8, 0.4) forwards;
+}
+.quote-line { fill: var(--tick); clip-path: inset(0 100% 0 0); animation: wipe 0.9s linear forwards; }
+@keyframes wipe { to { clip-path: inset(0 0 0 0); } }
+.quote-tip { fill: none; stroke: var(--tick); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; opacity: 0; animation: dot 0.2s ease forwards; }
+.board { display: grid; gap: 4px; padding: 6px 0 2px; border-top: 1px dashed var(--line); font-size: 13px; }
+.board-row { display: grid; grid-template-columns: 2.5em 1fr 7.5em; align-items: center; gap: 8px; }
+.board-side { color: var(--muted); }
+.board-track { height: 10px; }
+.board-bar { display: block; height: 100%; background: var(--tick); border-radius: 0 4px 4px 0; transform-origin: left; transform: scaleX(0); animation: grow-x 0.8s cubic-bezier(0.3, 0, 0.2, 1) forwards; }
+.board-buy .board-bar { background: var(--muted); }
+.board-qty { text-align: right; }
+.quote-volume { font-family: var(--hand); font-size: 13px; color: var(--tick); }
 
 .tap-area { position: relative; }
 @keyframes pen { to { stroke-dashoffset: 0; } }
@@ -625,5 +659,8 @@ button { font: inherit; color: inherit; }
   .ticker-line, .graph-line { stroke-dashoffset: 0; }
   .bar, .hbar { transform: none; }
   .graph-dot { opacity: 1; }
-  .ticker-dot { opacity: 1; }
+  .ticker-dot, .quote-tip, .ticker-end-last { opacity: 1; }
+  .quote-drop { stroke-dashoffset: 0; }
+  .quote-line { clip-path: none; }
+  .board-bar { transform: none; }
 }

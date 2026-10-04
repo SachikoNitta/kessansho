@@ -1,11 +1,17 @@
 // ケース1 Nulog（シナリオ台本「決算書は嘘をつく ケース1 Nulog シナリオ台本」より）
 
-import { createCaseBuilder, stockChart } from "../../src/authoring/case-builder.js";
+import { createCaseBuilder, stockChart, limitQuote } from "../../src/authoring/case-builder.js";
 
 const { pages, choice, route, end, build } = createCaseBuilder();
 
 // 本文に差し込む株価チャート（株価が動く場面で使う）
 const TICKER = "Nulog（東証グロース）";
+// 株価チャートの左側に描く「それまで」。上場（公開価格）からの終値を、物語の順に足していく
+const BUBBLE = [1200, 2150, 3100, 3900, 4800];
+const AFTER_REPORT = [...BUBBLE, 3840];
+const AFTER_REBUTTAL = [...AFTER_REPORT, 4320];
+const AFTER_COMMITTEE = [...AFTER_REBUTTAL, 4500];
+const AFTER_INTERIM = [...AFTER_COMMITTEE, 4800];
 
 // ---------- プロローグ 白樺のブレンド ----------
 
@@ -262,15 +268,18 @@ choice("q2_4", "c2", {
   next: "c2_end",
   options: [
     { label: "Nulogは循環取引をしている", judge: "x", delta: -1, flags: ["assert"], text: ["結論は強いほど読まれる。そして、強いほど狙われる。"] },
-    { label: "循環取引の疑いがあり、会社に説明を求める", judge: "o", delta: 1, text: ["事実を並べ、疑いを疑いのまま置く。判断するのは読む側だ。"] },
+    { label: "循環取引の疑いがあり、会社に説明を求める", judge: "o", delta: 1, flags: ["measured"], text: ["事実を並べ、疑いを疑いのまま置く。判断するのは読む側だ。"] },
     { label: "販売パートナー全社と代理店が共謀している", judge: "x", delta: -1, flags: ["toho"], text: ["大阪の会社の名前を、私は消さなかった。"] },
   ],
 });
 
 pages("c2_end", "c2", [[
   "午前六時、レポートを公開した。",
+  { doc: "report", ifFlag: "measured" },
+  { doc: "reportAssert", ifFlag: "assert" },
+  { doc: "reportToho", ifFlag: "toho" },
   { text: "寄り付きで、Nulogの株価は二割下げた。", emphasis: true },
-  stockChart({ name: TICKER, keys: [4800, 3900, 3980, 3840], label: "レポート公開の日", seed: 3 }),
+  stockChart({ name: TICKER, keys: [4800, 3900, 3980, 3840], before: BUBBLE, label: "レポート公開の日", seed: 3 }),
 ]], "i2");
 
 // ---------- 幕間2 鳴りやまない電話 ----------
@@ -305,7 +314,7 @@ pages("c3", "c3", [[
   "「当該レポートは事実に基づかない憶測であり、法的措置を検討している」",
   "文面は丁寧で、四つの主張が並んでいた。",
   "夜のうちに、SNSは「空売り屋のデマ」で埋まった。翌朝、株価は下げ幅の半分を取り戻した。",
-  stockChart({ name: TICKER, keys: [3840, 4050, 4380, 4320], label: "反論の翌朝", seed: 5 }),
+  stockChart({ name: TICKER, keys: [3840, 4050, 4380, 4320], before: AFTER_REPORT, label: "反論の翌朝", seed: 5 }),
 ]], "q3_1");
 
 // 反論への応酬：選択肢は毎回同じ四つ。反論リリースと三つの証拠は、どの分岐でも開ける。やり直しなし。
@@ -375,7 +384,7 @@ choice("q3_4", "c3", {
 pages("c3_end", "c3", [[
   "三日後、Nulogは「特別調査委員会」の設置を発表した。",
   { text: "株価は、また少し戻った。", muted: true },
-  stockChart({ name: TICKER, keys: [4320, 4280, 4450, 4500], label: "調査委員会の設置発表", seed: 11 }),
+  stockChart({ name: TICKER, keys: [4320, 4280, 4450, 4500], before: AFTER_REBUTTAL, label: "調査委員会の設置発表", seed: 11 }),
 ]], "i3");
 
 // ---------- 幕間3 雨の白樺 ----------
@@ -417,7 +426,7 @@ pages("c4", "c4", [[
   "二週間後、特別調査委員会は中間報告を出した。",
   { text: "「現時点において、不正な取引の事実は認められない」", emphasis: true },
   "株価は、私がレポートを出す前の値に戻った。",
-  stockChart({ name: TICKER, keys: [4500, 4620, 4780, 4800], label: "中間報告の日", seed: 13 }),
+  stockChart({ name: TICKER, keys: [4500, 4620, 4780, 4800], before: AFTER_COMMITTEE, label: "中間報告の日", seed: 13 }),
   "メールボックスには、名前のない罵倒が四十二通。一通だけ、知らない弁護士事務所からの内容証明が混ざっていた。",
 ]], "q4_1");
 
@@ -542,7 +551,7 @@ route("final", "final", [
 pages("end_perfect", "final", [[
   "二か月後の朝、ニュースが流れた。証券取引等監視委員会が、Nulogに強制調査に入った。",
   { text: "株価は、ストップ安のまま値がつかなかった。", emphasis: true },
-  stockChart({ name: TICKER, keys: [4800, 4100, 4100, 4100], noise: 0, label: "強制調査の報道", note: "ストップ安・売り気配" }),
+  limitQuote({ name: TICKER, close: 4800, limit: 4100, sell: 2846500, buy: 3200, before: AFTER_INTERIM, label: "強制調査の報道", note: "ストップ安" }),
   "半年後に公表された第三者委員会の報告書には、ノクトリンクを経由した資金の流れが、図つきで載っていた。私が書いた輪と、同じ形をしていた。",
   { text: "報告書の脚注に、処理ログの件数が載っていた。発表されたアカウント数の、一割に満たない数字だった。あの一行のメールが、どこかで役に立ったのだろう。", ifFlag: "ally" },
 ]], "epi");
@@ -551,7 +560,7 @@ pages("end_late", "final", [[
   "半年後、Nulogは決算発表を延期した。監査法人が、意見を出せないと伝えたらしい。",
   "不正は、結局明るみに出た。私が書いたとおりの形で。",
   "ただ、私が待っていた半年の間に、株価はもう一度高値をつけていた。最後に買った人たちが、いちばん多くを失った。",
-  stockChart({ name: TICKER, keys: [4800, 5200, 5600, 5450, 2100], label: "この半年", note: "決算発表の延期", seed: 9 }),
+  stockChart({ name: TICKER, keys: [4800, 5200, 5600, 5450, 2100], before: AFTER_INTERIM, label: "この半年", note: "決算発表の延期", seed: 9 }),
   { text: "正しいことは、間に合わなければ、ただの記録になる。", emphasis: true },
 ]], "epi");
 
@@ -733,6 +742,50 @@ const docs = {
     label: "これまでの推論", source: "調査メモ", type: "inferences",
     caption: "これまでに得た推論",
     items: ["A", "B", "C", "D"],
+  },
+  // 公開したレポート。2-4 で選んだ結論ごとに、本文に出るのは一枚だけ
+  report: {
+    label: "公開したレポート", source: "四階リサーチ（スクリーンショット）", type: "report",
+    url: "https://yonkai-research.example/reports/nulog",
+    publisher: "四階リサーチ", date: "公開 午前6:00", tag: "調査レポート",
+    disclaimer: "本レポートは、会社が公開した資料と登記簿など、誰でも入手できる情報だけをもとにしています。筆者は本銘柄の株式を保有していません。",
+    title: "Nulog：売上と広告費が循環している疑い",
+    points: [
+      "売上の伸びと同じだけ、広告費が増えている。広告費は売上の84%。同業は2割に届かない。",
+      "有料アカウントは二年で1.2万から8万に増えた。アプリのレビュー件数は、同じ間に2割しか増えていない。",
+      "主要な販売先ハルモ（売上の41%）とノクトリンク（23%）は、同じビルの同じ階にある。ハルモの代表・久世氏は、広告を一括で請け負うアストラ・アドの監査役でもある。",
+      "監査報酬が倍になった翌期に監査法人が交代し、その後、広告代理店がアストラ・アドの一社に集約された。",
+    ],
+    conclusion: "循環取引の疑いがある。会社には、販売先・広告の委託先との関係と、広告費の使い道について説明を求める。",
+  },
+  reportAssert: {
+    label: "公開したレポート", source: "四階リサーチ（スクリーンショット）", type: "report",
+    url: "https://yonkai-research.example/reports/nulog",
+    publisher: "四階リサーチ", date: "公開 午前6:00", tag: "調査レポート",
+    disclaimer: "本レポートは、会社が公開した資料と登記簿など、誰でも入手できる情報だけをもとにしています。筆者は本銘柄の株式を保有していません。",
+    title: "Nulogは循環取引をしている",
+    points: [
+      "売上の伸びと同じだけ、広告費が増えている。広告費は売上の84%。同業は2割に届かない。",
+      "有料アカウントは二年で1.2万から8万に増えた。アプリのレビュー件数は、同じ間に2割しか増えていない。",
+      "主要な販売先ハルモ（売上の41%）とノクトリンク（23%）は、同じビルの同じ階にある。ハルモの代表・久世氏は、広告を一括で請け負うアストラ・アドの監査役でもある。",
+      "監査報酬が倍になった翌期に監査法人が交代し、その後、広告代理店がアストラ・アドの一社に集約された。",
+    ],
+    conclusion: "Nulogの売上は、自社の広告費を回して作られている。",
+  },
+  reportToho: {
+    label: "公開したレポート", source: "四階リサーチ（スクリーンショット）", type: "report",
+    url: "https://yonkai-research.example/reports/nulog",
+    publisher: "四階リサーチ", date: "公開 午前6:00", tag: "調査レポート",
+    disclaimer: "本レポートは、会社が公開した資料と登記簿など、誰でも入手できる情報だけをもとにしています。筆者は本銘柄の株式を保有していません。",
+    title: "Nulog、販売パートナー全社と代理店が共謀か",
+    points: [
+      "売上の伸びと同じだけ、広告費が増えている。広告費は売上の84%。同業は2割に届かない。",
+      "有料アカウントは二年で1.2万から8万に増えた。アプリのレビュー件数は、同じ間に2割しか増えていない。",
+      "主要な販売先ハルモ（売上の41%）とノクトリンク（23%）は、同じビルの同じ階にある。ハルモの代表・久世氏は、広告を一括で請け負うアストラ・アドの監査役でもある。",
+      "監査報酬が倍になった翌期に監査法人が交代し、その後、広告代理店がアストラ・アドの一社に集約された。",
+      "三社目の販売先、東邦ビジネス販売（12%）も、同じ輪の中にあるとみられる。",
+    ],
+    conclusion: "販売パートナー三社と広告代理店が共謀し、売上を作っている。",
   },
   rebuttal: {
     label: "反論リリース", source: "Nulog／適時開示", type: "article",

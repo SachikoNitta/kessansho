@@ -12,11 +12,14 @@
 //
 //   stockChart({ name, keys, label, note, noise, steps, seed })  本文に差し込む株価チャートの段落
 //     keys: 通る株価（最初が前日終値、最後が終値）。間は seed から決まる小さな揺れでつなぐ（毎回同じ形）
+//     before: それまでの終値（最後が前日終値）。左に細い線で描き、その日との落差を見せる。limitQuote も同じ
+//   limitQuote({ name, close, limit, sell, buy, label, note })   値がつかなかった日（ストップ安・高の気配）の段落
+//     close: 前日終値、limit: 気配値（制限値幅の端）。sell / buy: 板に並んだ株数
 
 const DEFAULT_DELTA = { o: 1, tri: 0, x: -1 };
 
 /** 本文に差し込む株価チャート。出力は JSON にできる素のデータ */
-export function stockChart({ name, keys, label = "", note = "", noise = 0.05, steps = 28, seed = 7 }) {
+export function stockChart({ name, keys, before = [], label = "", note = "", noise = 0.05, steps = 28, seed = 7 }) {
   if (!Array.isArray(keys) || keys.length < 2) throw new Error("stockChart: keys は2つ以上必要です");
   let state = seed >>> 0;
   const rand = () => ((state = (state * 1664525 + 1013904223) >>> 0) / 2 ** 32) - 0.5;
@@ -31,7 +34,17 @@ export function stockChart({ name, keys, label = "", note = "", noise = 0.05, st
   }
   points[0] = keys[0];
   points[steps] = keys[keys.length - 1];
-  return { chart: { name, label, note, points } };
+  return { chart: { name, label, note, points, before: [...before] } };
+}
+
+/**
+ * 値がつかなかった日。売買が一度も成立しないので線は引かず、気配値と板（売り・買いの株数）を出す。
+ * limit が close より下ならストップ安の売り気配、上ならストップ高の買い気配
+ */
+export function limitQuote({ name, close, limit, sell, buy, before = [], label = "", note = "" }) {
+  if (![close, limit, sell, buy].every(Number.isFinite)) throw new Error("limitQuote: close, limit, sell, buy は数で指定します");
+  if (close === limit) throw new Error("limitQuote: limit は close と違う値にします");
+  return { chart: { kind: "quote", name, label, note, close, limit, sell, buy, before: [...before] } };
 }
 
 export function createCaseBuilder() {
