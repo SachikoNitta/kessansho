@@ -19,11 +19,11 @@ const CX = W / 2;
 const CY = 108;
 const RX = 108; // 横に広い楕円の上に箱を並べる
 const RY = 80;
-const BOX_H = 40;
+const BOX_H = 44;
 let uid = 0;
 
 function boxWidth(node) {
-  return Math.max(76, Math.min(140, Math.max(node.label.length * 13.5, (node.sub || "").length * 10.5) + 18));
+  return Math.max(76, Math.min(140, Math.max(node.label.length * 13.5, (node.sub || "").length * 12.5) + 18));
 }
 
 /** 2つの箱の中心を結ぶ、外側にふくらんだ曲線 */
@@ -87,8 +87,8 @@ function cycle(spec, delay) {
   const reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   // 輪の上を回る硬貨（箱の下をくぐる）
   const coin = reduce ? null : svg("g", { class: "dia-coin", style: `animation-delay:${delay + 1.8}s` }, [
-    svg("circle", { r: 7 }),
-    svg("text", { y: 3.5, "text-anchor": "middle" }, "¥"),
+    svg("circle", { r: 9 }),
+    svg("text", { y: 4.5, "text-anchor": "middle" }, "¥"),
     svg("animateMotion", { dur: `${n * 1.3}s`, repeatCount: "indefinite", path: ring.join(" ") }),
   ]);
 
@@ -96,8 +96,8 @@ function cycle(spec, delay) {
     const p = pos[i];
     return svg("g", { class: "dia-node" }, [
       svg("rect", { x: p.x - p.w / 2, y: p.y - BOX_H / 2, width: p.w, height: BOX_H, rx: 6 }),
-      svg("text", { class: "dia-name", x: p.x, y: node.sub ? p.y + 1 : p.y + 5, "text-anchor": "middle" }, node.label),
-      node.sub && svg("text", { class: "dia-sub", x: p.x, y: p.y + 14, "text-anchor": "middle" }, node.sub),
+      svg("text", { class: "dia-name", x: p.x, y: node.sub ? p.y - 1 : p.y + 5, "text-anchor": "middle" }, node.label),
+      node.sub && svg("text", { class: "dia-sub", x: p.x, y: p.y + 15, "text-anchor": "middle" }, node.sub),
     ]);
   });
 
@@ -180,8 +180,8 @@ function network(spec, delay) {
       ])
     : svg("g", { class: `dia-node${n.faded ? " faded" : ""}` }, [
         svg("rect", { x: n.x - n.w / 2, y: n.y - BOX_H / 2, width: n.w, height: BOX_H, rx: 6 }),
-        svg("text", { class: "dia-name", x: n.x, y: n.sub ? n.y + 1 : n.y + 5, "text-anchor": "middle" }, n.label),
-        n.sub && svg("text", { class: "dia-sub", x: n.x, y: n.y + 14, "text-anchor": "middle" }, n.sub),
+        svg("text", { class: "dia-name", x: n.x, y: n.sub ? n.y - 1 : n.y + 5, "text-anchor": "middle" }, n.label),
+        n.sub && svg("text", { class: "dia-sub", x: n.x, y: n.y + 15, "text-anchor": "middle" }, n.sub),
       ]));
 
   const summary = `${spec.title}。` + spec.links.map((l) =>

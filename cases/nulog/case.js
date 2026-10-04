@@ -230,7 +230,7 @@ choice("q2_2", "c2", {
             { id: "harmo", label: "ハルモ", sub: "販売先・41%", x: 54, y: 104 },
             { id: "nocto", label: "ノクトリンク", sub: "販売先・23%", x: 54, y: 188 },
             { id: "astra", label: "アストラ・アド", sub: "広告代理店", x: 262, y: 104 },
-            { id: "toho", label: "東邦ビジネス販売", sub: "販売先・12%・大阪", x: 250, y: 214, faded: true },
+            { id: "toho", label: "東邦ビジネス販売", sub: "販売先・12%・大阪", x: 246, y: 214, faded: true },
             { id: "kuze", label: "久世", x: 158, y: 150, person: true },
           ],
           links: [

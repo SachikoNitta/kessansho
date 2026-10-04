@@ -9,7 +9,7 @@
   --ink: #2A2620;
   --ink-soft: #4A4238;
   --muted: #5E564B;
-  --faint: #8A8174;
+  --faint: #6E6559;
   --line: #C8BEAE;
   --line-soft: #D8CFBF;
   --navy: #2F3E5C;
@@ -99,12 +99,12 @@ button { font: inherit; color: inherit; }
   font-family: var(--hand);
   font-size: 14px;
   color: var(--navy);
-  min-height: 44px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.link.underline { border-bottom: 1px solid var(--navy); min-height: 40px; }
+.link.underline { border-bottom: 1px solid var(--navy); min-height: 48px; }
 
 /* 手書きの波線 */
 .wave { display: block; width: calc(100% - 56px); height: 24px; margin: 6px 28px 0; overflow: visible; }
@@ -195,12 +195,12 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
   font-family: var(--hand);
   font-size: 15px;
-  min-height: 44px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   border-bottom: 1px solid #A79E90;
 }
-.footnote { font-size: 10.5px; line-height: 1.7; color: var(--muted); text-align: center; }
+.footnote { font-size: 12px; line-height: 1.7; color: var(--muted); text-align: center; }
 .version { font-family: var(--italic); font-style: italic; font-size: 12px; color: var(--faint); text-align: center; }
 .footnote .it { font-size: 13px; color: var(--red); }
 
@@ -231,8 +231,8 @@ button { font: inherit; color: inherit; }
 .case.locked .no { color: var(--faint); }
 .case.locked .name { font-weight: 500; font-size: 20px; text-decoration: line-through; text-decoration-color: #A79E90; }
 .case.locked .row2 { color: var(--faint); }
-.case.ghost { min-height: 60px; flex-direction: row; align-items: center; gap: 12px; color: #B2A898; }
-.case.ghost .no { color: #B2A898; }
+.case.ghost { min-height: 60px; flex-direction: row; align-items: center; gap: 12px; color: var(--faint); }
+.case.ghost .no { color: var(--faint); }
 .case-rule { height: 1px; background: var(--line); margin: 18px 0; }
 
 /* ---------- 分岐 ---------- */
@@ -342,16 +342,16 @@ button { font: inherit; color: inherit; }
 .site-bar { display: flex; align-items: center; gap: 10px; padding: 7px 10px; background: #ECEAE6; border-bottom: 1px solid #D8D4CC; }
 .site-dots { display: flex; gap: 5px; }
 .site-dots i { width: 8px; height: 8px; border-radius: 50%; background: #C9C4BA; }
-.site-url { flex: 1; min-width: 0; font-size: 11px; color: #5A5F6B; background: #FFFFFF; border-radius: 10px; padding: 3px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.site-url { flex: 1; min-width: 0; font-size: 12px; color: #5A5F6B; background: #FFFFFF; border-radius: 10px; padding: 3px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .site-page { padding: 12px 16px 18px; background: linear-gradient(160deg, #F4F7FF 0%, #FFFFFF 60%); }
 .site-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .site-logo { font-weight: 800; font-size: 16px; letter-spacing: 0.02em; }
-.site-links { display: flex; gap: 10px; font-size: 10px; color: #5A5F6B; }
+.site-links { display: flex; gap: 10px; font-size: 12px; color: #5A5F6B; }
 .site-hero { padding-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .site-headline { font-size: 22px; font-weight: 800; line-height: 1.3; letter-spacing: 0.01em; }
 .site-lead { font-size: 12px; line-height: 1.7; color: #3B414D; }
 .site-badges { display: flex; flex-wrap: wrap; gap: 6px; }
-.site-badges span { font-size: 10px; font-weight: 700; color: #2450D8; background: #E6ECFF; border-radius: 999px; padding: 3px 9px; }
+.site-badges span { font-size: 12px; font-weight: 700; color: #2450D8; background: #E6ECFF; border-radius: 999px; padding: 3px 9px; }
 /* 手紙・通知書 */
 .letter {
   background: #FFFDF7; border: 1px solid var(--line); box-shadow: 2px 2px 0 rgba(46, 32, 18, 0.12);
@@ -360,7 +360,7 @@ button { font: inherit; color: inherit; }
 }
 .letter p { margin: 0; text-indent: 1em; }
 .letter p:last-of-type { text-align: right; text-indent: 0; }
-.letter-date { text-align: right; font-size: 11px; color: var(--muted); }
+.letter-date { text-align: right; font-size: 12px; color: var(--muted); }
 .letter-to { font-size: 13px; }
 .letter-title { text-align: center; font-size: 17px; font-weight: 700; letter-spacing: 0.6em; padding: 6px 0 4px; }
 .letter-from { align-self: flex-end; text-align: right; font-size: 12px; padding-top: 4px; }
@@ -368,21 +368,21 @@ button { font: inherit; color: inherit; }
 .release .letter-title { letter-spacing: 0.04em; font-size: 15px; }
 .release p:last-of-type { text-align: left; text-indent: 1em; }
 .release p.item { text-indent: -2em; padding-left: 2em; }
-.release .letter-from { padding: 0 0 6px; font-size: 11px; }
+.release .letter-from { padding: 0 0 6px; font-size: 12px; }
 .letter-closing { text-align: right; }
 .letter-stamp {
-  margin-top: 8px; padding: 6px 8px; font-size: 10px; line-height: 1.6; color: #8E2B1E;
+  margin-top: 8px; padding: 6px 8px; font-size: 12px; line-height: 1.6; color: #8E2B1E;
   border: 1.5px solid #8E2B1E; border-radius: 3px; transform: rotate(-1.2deg); opacity: 0.85;
 }
 .report-page { padding: 12px 16px 16px; background: #FFFFFF; color: #1F232B; display: flex; flex-direction: column; gap: 8px; }
 .report-mast { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 8px; border-bottom: 2px solid #1F232B; }
 .report-brand { font-weight: 800; font-size: 14px; letter-spacing: 0.08em; }
-.report-date { font-size: 10px; color: #5A5F6B; }
-.report-tag { align-self: flex-start; font-size: 10px; font-weight: 700; color: #8E2B1E; border: 1px solid #8E2B1E; padding: 1px 6px; }
+.report-date { font-size: 12px; color: #5A5F6B; }
+.report-tag { align-self: flex-start; font-size: 12px; font-weight: 700; color: #8E2B1E; border: 1px solid #8E2B1E; padding: 1px 6px; }
 .report-title { font-size: 18px; font-weight: 800; line-height: 1.4; }
 .report-points { margin: 0; padding-left: 1.4em; font-size: 12px; line-height: 1.7; color: #3B414D; display: flex; flex-direction: column; gap: 4px; }
 .report-conclusion { font-size: 12px; line-height: 1.7; padding: 8px 10px; background: #F4F1EA; border-left: 3px solid #1F232B; }
-.report-disclaimer { font-size: 9.5px; line-height: 1.6; color: #6B707B; }
+.report-disclaimer { font-size: 12px; line-height: 1.6; color: #6B707B; }
 .site-cta { margin-top: 4px; font-size: 12px; font-weight: 700; color: #FFFFFF; background: #2450D8; border-radius: 6px; padding: 7px 14px; }
 
 /* 写真：ポラロイド風の枠に、マスキングテープ */
@@ -443,7 +443,7 @@ button { font: inherit; color: inherit; }
 .bar { width: 100%; border-radius: 4px 4px 0 0; transform-origin: bottom; transform: scaleY(0); animation: grow-y 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 .bar-label { position: absolute; left: 0; right: 0; bottom: -24px; font-size: 12px; color: var(--muted); text-align: center; white-space: nowrap; }
 .bar-divider { position: relative; width: 0; border-left: 1px dashed var(--muted); }
-.bar-divider span { position: absolute; top: 0; left: 4px; font-family: var(--hand); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.bar-divider span { position: absolute; top: 0; left: 4px; font-family: var(--hand); font-size: 12px; color: var(--muted); white-space: nowrap; }
 @keyframes grow-y { to { transform: scaleY(1); } }
 
 .hbars { display: flex; flex-direction: column; gap: 8px; }
@@ -464,7 +464,7 @@ button { font: inherit; color: inherit; }
 .graph-dot.s1 { fill: var(--series-1); }
 .graph-dot.s2 { fill: var(--series-2); }
 .graph-end { font-size: 12px; fill: var(--ink); font-family: var(--mincho); }
-.graph-xlabel { font-size: 11px; fill: var(--muted); font-family: var(--mincho); }
+.graph-xlabel { font-size: 12px; fill: var(--muted); font-family: var(--mincho); }
 
 /* 本文に差し込む図（お金の輪） */
 .diagram {
@@ -474,21 +474,22 @@ button { font: inherit; color: inherit; }
 .dia-svg { width: 100%; height: auto; display: block; overflow: visible; }
 .dia-node rect { fill: #FFFDF8; stroke: var(--navy); stroke-width: 1.4; }
 .dia-name { font-size: 13px; font-weight: 700; fill: var(--ink); }
-.dia-sub { font-size: 10px; fill: var(--muted); }
+.dia-sub { font-size: 12px; fill: var(--muted); }
 .dia-arrow { fill: none; stroke: var(--red); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen 0.5s ease forwards; }
 .dia-arrow.dashed { stroke-dasharray: 5 5; stroke-dashoffset: 0; opacity: 0; animation: dot 0.4s ease forwards; }
 .dia-head { fill: var(--red); }
 .dia-tie { fill: none; stroke: var(--navy); stroke-width: 1.6; stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen 0.5s ease forwards; }
 .dia-label.tie { fill: var(--navy); }
 .dia-node.person circle { fill: #F4E3B5; stroke: var(--navy); stroke-width: 1.4; }
-.dia-node.faded { opacity: 0.45; }
+.dia-node.faded rect { stroke: var(--line); stroke-dasharray: 3 3; }
+.dia-node.faded text { fill: var(--muted); font-weight: 400; }
 .dia-group rect { fill: rgba(47, 62, 92, 0.05); stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
-.dia-group text { font-size: 10px; fill: var(--muted); }
+.dia-group text { font-size: 12px; fill: var(--muted); }
 .dia-label { font-size: 12px; fill: var(--red); font-weight: 700; opacity: 0; animation: dot 0.3s ease forwards; }
 .dia-label.dashed { fill: var(--muted); }
 .dia-coin { opacity: 0; animation: dot 0.4s ease forwards; }
 .dia-coin circle { fill: #D9B44A; stroke: #8E6A1A; stroke-width: 1; }
-.dia-coin text { font-size: 9px; font-weight: 700; fill: #5A4210; }
+.dia-coin text { font-size: 12px; font-weight: 700; fill: #5A4210; }
 
 /* 本文に差し込む株価チャート */
 .ticker {
@@ -527,9 +528,9 @@ button { font: inherit; color: inherit; }
 @keyframes dot { to { opacity: 1; } }
 .ticker-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 13px; }
 .ticker-chg { color: var(--tick); font-weight: 700; }
-.ticker-plot { position: relative; padding-left: 40px; }
-.ticker-axis { position: absolute; left: 0; top: 0; bottom: 0; width: 34px; }
-.ticker-axis span { position: absolute; right: 0; transform: translateY(-50%); font-size: 10px; line-height: 1; color: var(--muted); }
+.ticker-plot { position: relative; padding-left: 46px; }
+.ticker-axis { position: absolute; left: 0; top: 0; bottom: 0; width: 40px; }
+.ticker-axis span { position: absolute; right: 0; transform: translateY(-50%); font-size: 12px; line-height: 1; color: var(--muted); }
 .ticker-yaxis { stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .ticker-grid { stroke: var(--line); stroke-width: 1; opacity: 0.6; vector-effect: non-scaling-stroke; }
 .ticker-note { font-family: var(--hand); color: var(--tick); }
@@ -642,7 +643,7 @@ button { font: inherit; color: inherit; }
   font-family: var(--hand);
   font-size: 15px;
   color: var(--faint);
-  min-height: 40px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   border-bottom: 2px solid transparent;
@@ -651,30 +652,42 @@ button { font: inherit; color: inherit; }
 
 /* 資料の束：インデックスシールと、重ねた紙 */
 .index-tabs {
-  overflow-y: hidden; gap: 3px; align-items: flex-end; margin-bottom: -14px; padding: 6px 8px 0; position: relative; z-index: 1;
+  overflow-y: hidden; gap: 3px; align-items: flex-end; margin-bottom: -14px; padding: 0 8px; position: relative; z-index: 1;
   /* 収まらないシールは、端で薄くして続きがあることを示す */
   -webkit-mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 18px), transparent);
   mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 18px), transparent);
 }
 .index-tabs .tab {
-  min-height: 0;
-  padding: 6px 11px 4px;
-  font-size: 13px;
-  color: var(--ink-soft, #4A4136);
-  background: var(--index);
+  position: relative;
+  isolation: isolate;
+  min-height: 48px; /* 押せる範囲は 48px。色のついたシールは下の 40px だけ */
+  box-sizing: border-box;
+  align-items: flex-end;
+  padding: 0 12px 6px;
+  font-size: 14px;
+  color: var(--ink-soft);
   border: none;
+  filter: saturate(0.75) brightness(0.97);
+  transition: filter 0.15s ease;
+}
+.index-tabs .tab::before {
+  content: "";
+  position: absolute;
+  inset: 8px 0 0;
+  z-index: -1;
+  background: var(--index);
   border-radius: 7px 7px 0 0;
   box-shadow: inset 0 -5px 6px -5px rgba(40, 28, 14, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-  filter: saturate(0.75) brightness(0.97);
-  transition: padding 0.15s ease, filter 0.15s ease;
+  transition: inset 0.15s ease;
 }
 .index-tabs .tab[aria-selected="true"] {
   color: var(--ink);
   font-weight: 700;
-  padding-bottom: 9px;
+  min-height: 53px;
+  padding-bottom: 11px;
   filter: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
+.index-tabs .tab[aria-selected="true"]::before { inset: 0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5); }
 .doc-paper {
   position: relative;
   background: #FFFDF8;
