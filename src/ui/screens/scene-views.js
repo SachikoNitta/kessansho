@@ -50,7 +50,9 @@ function textView({ session, actions }) {
   const choiceId = session.nextChoiceId?.();
   if (choiceId) {
     const lead = el("div", { class: "lead", onclick: (e) => showAllNow(e.currentTarget) }, parts);
-    return choiceScreen({ session, actions, choiceId, lead, choose: actions.chooseAhead });
+    // 本文にすでに差し込んである資料は、問いの下でくり返さない
+    const shown = paragraphs.filter((p) => p.doc).map((p) => p.doc);
+    return choiceScreen({ session, actions, choiceId, lead, shown, choose: actions.chooseAhead });
   }
 
   // 表示途中のタップは、まず全文を出す。出揃っていたら次へ。
@@ -86,10 +88,23 @@ function choiceView({ session, actions }) {
   return choiceScreen({ session, actions, choiceId: session.sceneId, lead, choose: actions.choose });
 }
 
-/** 問いと選択肢の画面。lead は問いの上に置く文（分岐の recap か、直前の本文） */
-function choiceScreen({ session, actions, choiceId, lead, choose }) {
+/**
+ * 問いと選択肢の画面。上から「lead（分岐の recap か、直前の本文）→ 問いの資料 → 問い → 選択肢」。
+ * 資料は開く操作なしで、スクロールするだけで必ず目を通せるように、問いの上にそのまま並べる
+ */
+function choiceScreen({ session, actions, choiceId, lead, shown = [], choose }) {
   const scene = session.definition.scenes[choiceId];
-  const docs = scene.docs.filter((id) => session.definition.docs[id]);
+  const docs = scene.docs.filter((id) => session.definition.docs[id] && !shown.includes(id));
+  const papers = docs.map((id, i) => {
+    const { doc, nodes } = actions.renderDoc(id);
+    return el("figure", { class: `q-doc doc-paper embed-${doc.type} reveal`, style: `animation-delay:${0.2 + i * 0.15}s` }, [
+      el("figcaption", { class: "doc-paper-head" }, [
+        el("span", { class: "doc-paper-label" }, doc.label),
+        doc.source && el("span", { class: "doc-source hand" }, doc.source),
+      ]),
+      ...nodes,
+    ]);
+  });
 
   const options = session.options(choiceId).map(({ option, index, used }, n) => el("button", {
     class: "option",
@@ -102,9 +117,10 @@ function choiceScreen({ session, actions, choiceId, lead, choose }) {
     header(session, actions),
     wave(),
     lead,
+    papers.length > 0 && el("div", { class: "q-docs" }, papers),
     el("div", { style: "flex:1;min-height:32px" }),
     el("div", { class: "question" }, [qLine, el("div", {}, options)]),
-    docsButton({ count: session.seenDocs.length, fresh: docs.length > 0, onClick: () => actions.openArchive(docs) }),
+    docsButton({ count: session.seenDocs.length, onClick: () => actions.openArchive() }),
   ]);
 }
 
