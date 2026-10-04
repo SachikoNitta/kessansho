@@ -133,7 +133,6 @@ button { font: inherit; color: inherit; }
 
 /* 本文の下に問いを出すとき、問いの上に置く本文 */
 .lead { display: flex; flex-direction: column; gap: 20px; padding: 28px 30px 0; }
-.split-choices .lead { padding-top: 0; }
 
 .turn {
   padding: 16px 28px 40px;
@@ -653,45 +652,6 @@ button { font: inherit; color: inherit; }
   border-bottom: 2px solid transparent;
 }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--red); }
-
-/* 分岐で資料を見ながら選ぶ ---------- */
-/* A 上下に分ける */
-.screen.split { flex: none; height: 100dvh; max-height: 100dvh; min-height: 0; overflow: hidden; }
-.split-area { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px 20px 0; }
-.split-docs { flex: 0 0 50%; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
-.split-docs .doc-paper { flex: 1; min-height: 0; overflow-y: auto; }
-.split-handle {
-  flex: none; height: 48px; display: flex; align-items: center; justify-content: center;
-  cursor: row-resize; touch-action: none; outline: none;
-}
-.split-handle .grip, .half-grip .grip { display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--faint); }
-.split-handle:focus-visible .grip, .split-handle.dragging .grip { background: var(--red); }
-.split-choices { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -20px; padding-bottom: env(safe-area-inset-bottom); }
-.split-choices .recap { margin-top: 0; font-size: 15px; line-height: 1.8; }
-.split-choices .question { padding-bottom: 24px; }
-.split-choices .q-line { margin-top: 8px; }
-
-/* B 半分のシート */
-.half-panel {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  height: 58dvh; max-width: 480px; margin: 0 auto;
-  display: flex; flex-direction: column; gap: 14px;
-  padding: 0 16px calc(env(safe-area-inset-bottom) + 12px);
-  background: var(--card);
-  box-shadow: 0 -8px 20px rgba(30, 20, 10, 0.25);
-  border-radius: 14px 14px 0 0;
-  animation: half-up 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-  transition: height 0.2s ease;
-}
-.half-panel[hidden] { display: none; }
-.half-panel.tall { height: 88dvh; }
-@keyframes half-up { from { transform: translateY(40%); opacity: 0; } to { transform: none; opacity: 1; } }
-.half-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: -10px; }
-.half-grip { all: unset; cursor: pointer; flex: 1; min-height: 48px; display: flex; align-items: center; justify-content: center; padding-left: 64px; }
-.half-close { flex: none; }
-.half-docs { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
-.half-docs .doc-paper { flex: 1; min-height: 0; overflow-y: auto; }
-.screen.panel-open { padding-bottom: calc(58dvh + 16px); }
 
 /* 資料の束：インデックスシールと、重ねた紙 */
 .index-tabs {
