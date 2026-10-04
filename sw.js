@@ -1,5 +1,5 @@
 // オフラインでも遊べるよう、アプリ本体をキャッシュする。
-const CACHE = "kessansho-v1";
+const CACHE = "kessansho-v2";
 const ASSETS = ["./", "index.html", "style.css", "js/story.js", "js/engine.js", "manifest.webmanifest", "icons/icon.svg"];
 
 self.addEventListener("install", (e) => {
