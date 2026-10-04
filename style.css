@@ -368,10 +368,10 @@ button { font: inherit; color: inherit; }
 .verdict path {
   fill: none;
   stroke: var(--red);
-  stroke-width: 7;
+  stroke-width: 1.6; /* 調査一覧の丸囲みと同じ太さ */
+  vector-effect: non-scaling-stroke;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.88;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
   animation: pen 0.32s cubic-bezier(0.5, 0, 0.2, 1) forwards;
