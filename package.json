@@ -12,6 +12,9 @@
     "build:artifact": "node scripts/build-artifact.js"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
     "esbuild": "^0.24.0"
   }
 }

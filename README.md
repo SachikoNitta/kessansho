@@ -17,20 +17,22 @@ npm run build      # dist/ に Web 版を出力
 
 ビルドは不要です（ES Modules）。ホーム画面に追加すればオフラインでも遊べます（PWA）。
 
-## リリース（Web 版）
+## リリース（Android アプリと Web 版）
 
-GitHub Actions でビルドし、**GitHub Pages に公開**して、**Release に zip を添付**します。
-
-- Web 版：https://sachikonitta.github.io/kessansho/ （スマホのブラウザで開き、「ホーム画面に追加」でアプリのように起動）
-- 表紙の下に `ver 0.3.0` のように版が出るので、スマホで最新版かどうか確かめられる
+GitHub Actions でビルドし、**Release に Android アプリ（APK）と Web 版の zip を添付**します。公開サイト（GitHub Pages）には出しません。
 
 出し方：
 
-1. 初回だけ、リポジトリの **Settings → Pages → Source** を **GitHub Actions** にする
-2. **Actions → Release → Run workflow** で版（例：`0.3.0`）を入れて実行（スマホのブラウザからも可）
-3. テスト → ビルド → Pages に公開 → Release（`v0.3.0`、zip 添付、Web 版の URL 入り）の順に進む
+1. **Actions → Release → Run workflow** で版（例：`0.14.0`）を入れて実行（スマホのブラウザからも可）
+2. テスト → Web 版をビルド → Android アプリをビルド → Release（`v0.14.0`、プレリリース）の順に進む
+3. スマホで Release ページを開き、`kessansho-v0.14.0.apk` を落として開けばインストールできる（初回は「提供元不明のアプリ」の許可が要る）
 
-ビルドだけ手元で試すとき：`node scripts/build.js 0.3.0` → `dist/` に出力。プッシュのたびに CI がテストとビルドを確かめます。
+- Android アプリは [Capacitor](https://capacitorjs.com/) で Web 版を包んだもの。`android/` は CI で毎回作るので、リポジトリには入れない
+- アイコン・起動画面・版は `scripts/android-resources.js` が `icons/icon.svg` から書き込む
+- APK はテスト用のデバッグ署名。ストアに出すときは、署名鍵を Secrets に置いて `assembleRelease` に切り替える
+- 表紙の下に `ver 0.14.0` のように版が出るので、最新版かどうか確かめられる
+
+ビルドだけ手元で試すとき：`node scripts/build.js 0.14.0` → `dist/` に出力。プッシュのたびに CI がテストとビルドを確かめます。
 
 ## 非公開のプレビュー（Claude の Artifact）
 
@@ -42,7 +44,7 @@ node scripts/build-artifact.js 0.3.0          # dist-artifact/index.html に出�
 ```
 
 - 表紙の版は `ver 0.3.0-preview` と出る
-- Artifact では Service Worker を使わない（オフライン対応は GitHub Pages 版のみ）
+- Artifact では Service Worker を使わない
 - セーブは、そのページを開いた端末のブラウザごとに保存される
 
 ## ケースの配布方針

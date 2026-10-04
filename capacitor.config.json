@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.sachikonitta.kessansho",
+  "appName": "決算書は嘘をつく",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#EFE8DA"
+  }
+}

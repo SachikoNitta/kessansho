@@ -1,13 +1,13 @@
-# リリース：テスト → Web 版をビルド → GitHub Pages に公開 → Release を作って zip を添付。
-# Actions タブの「Release」→「Run workflow」で版（例：0.3.0）を入れて実行する（スマホのブラウザからも可）。
-# 初回だけ、リポジトリの Settings → Pages → Source を「GitHub Actions」にしておくこと。
+# リリース：テスト → Web 版をビルド → Android アプリ（APK）をビルド → Release を作って添付。
+# Actions タブの「Release」→「Run workflow」で版（例：0.14.0）を入れて実行する（スマホのブラウザからも可）。
+# APK はデバッグ署名。スマホで Release ページから落として開けば、そのまま入れて遊べる（提供元不明のアプリを許可）。
 name: Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "版（例：0.3.0）"
+        description: "版（例：0.14.0）"
         required: true
       notes:
         description: "リリースノート（省略可）"
@@ -17,11 +17,12 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -36,7 +37,7 @@ jobs:
         run: |
           v="${INPUT_VERSION#v}"
           if [[ ! "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::版は 0.3.0 の形で入力してください（入力：$INPUT_VERSION）"
+            echo "::error::版は 0.14.0 の形で入力してください（入力：$INPUT_VERSION）"
             exit 1
           fi
           if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then
@@ -48,64 +49,73 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: 依存を入れる
+        run: |
+          npm ci
+          sudo apt-get update -q
+          sudo apt-get install -y -q librsvg2-bin
 
       - name: テスト
-        run: npm test
+        run: |
+          npm test
+          npm run validate
 
-      - name: ビルド
-        run: node scripts/build.js "${{ steps.version.outputs.version }}"
+      - name: Web 版をビルド
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node scripts/build.js "$VERSION"
+          (cd dist && zip -qr "../kessansho-v$VERSION-web.zip" .)
 
-      - name: zip にまとめる
-        run: cd dist && zip -qr "../kessansho-v${{ steps.version.outputs.version }}-web.zip" .
+      - name: Android アプリをビルド
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          npx cap add android
+          node scripts/android-resources.js "$VERSION" "$GITHUB_RUN_NUMBER"
+          npx cap sync android
+          (cd android && ./gradlew --no-daemon assembleDebug)
+          cp android/app/build/outputs/apk/debug/app-debug.apk "kessansho-v$VERSION.apk"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: web-zip
-          path: kessansho-v${{ steps.version.outputs.version }}-web.zip
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    outputs:
-      page_url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          name: release-files
+          path: |
+            kessansho-v${{ steps.version.outputs.version }}-web.zip
+            kessansho-v${{ steps.version.outputs.version }}.apk
 
   release:
-    needs: [build, deploy]
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: web-zip
+          name: release-files
 
       - name: Release を作る
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.build.outputs.version }}
-          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
           NOTES: ${{ inputs.notes }}
         run: |
           {
             if [ -n "$NOTES" ]; then printf '%s\n\n' "$NOTES"; fi
-            printf '**Web 版で遊ぶ：** %s\n\n' "$PAGE_URL"
-            printf 'スマホでは、開いてから「ホーム画面に追加」するとアプリのように起動できます。\n'
+            printf '**Android で遊ぶ：** `kessansho-v%s.apk` をスマホで開いてインストールしてください。\n' "$VERSION"
+            printf '（初回は「提供元不明のアプリ」の許可を求められます。テスト用のデバッグ署名です）\n\n'
+            printf '**Web 版：** `kessansho-v%s-web.zip` を展開して、HTTP サーバーで `index.html` を開きます。\n' "$VERSION"
           } > notes.md
-          gh release create "v$VERSION" "kessansho-v$VERSION-web.zip" \
+          gh release create "v$VERSION" "kessansho-v$VERSION.apk" "kessansho-v$VERSION-web.zip" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "v$VERSION" \
+            --prerelease \
             --notes-file notes.md
