@@ -466,6 +466,24 @@ button { font: inherit; color: inherit; }
 .graph-end { font-size: 12px; fill: var(--ink); font-family: var(--mincho); }
 .graph-xlabel { font-size: 11px; fill: var(--muted); font-family: var(--mincho); }
 
+/* 本文に差し込む図（お金の輪） */
+.diagram {
+  margin: 0; padding: 12px 14px 10px; background: var(--card); border: 1px solid var(--line);
+  box-shadow: 2px 2px 0 rgba(46, 32, 18, 0.12); display: flex; flex-direction: column; gap: 6px; font-family: var(--mincho);
+}
+.dia-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.dia-node rect { fill: #FFFDF8; stroke: var(--navy); stroke-width: 1.4; }
+.dia-name { font-size: 13px; font-weight: 700; fill: var(--ink); }
+.dia-sub { font-size: 10px; fill: var(--muted); }
+.dia-arrow { fill: none; stroke: var(--red); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen 0.5s ease forwards; }
+.dia-arrow.dashed { stroke-dasharray: 5 5; stroke-dashoffset: 0; opacity: 0; animation: dot 0.4s ease forwards; }
+.dia-head { fill: var(--red); }
+.dia-label { font-size: 12px; fill: var(--red); font-weight: 700; opacity: 0; animation: dot 0.3s ease forwards; }
+.dia-label.dashed { fill: var(--muted); }
+.dia-coin { opacity: 0; animation: dot 0.4s ease forwards; }
+.dia-coin circle { fill: #D9B44A; stroke: #8E6A1A; stroke-width: 1; }
+.dia-coin text { font-size: 9px; font-weight: 700; fill: #5A4210; }
+
 /* 本文に差し込む株価チャート */
 .ticker {
   margin: 0;
@@ -721,7 +739,8 @@ button { font: inherit; color: inherit; }
   .ticker-line, .graph-line { stroke-dashoffset: 0; }
   .bar, .hbar { transform: none; }
   .graph-dot { opacity: 1; }
-  .ticker-dot, .quote-tip { opacity: 1; }
+  .ticker-dot, .quote-tip, .dia-label, .dia-arrow.dashed { opacity: 1; }
+  .dia-arrow { stroke-dashoffset: 0; }
   .quote-drop { stroke-dashoffset: 0; }
   .quote-line { clip-path: none; }
   .board-bar { transform: none; }

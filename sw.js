@@ -22,6 +22,7 @@ const ASSETS = [
   "src/adapters/bundled-case-repository.js",
   "src/ui/app.js",
   "src/ui/charts.js",
+  "src/ui/diagram.js",
   "src/ui/dom.js",
   "src/ui/decorations.js",
   "src/ui/doc-renderers.js",

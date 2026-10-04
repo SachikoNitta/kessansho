@@ -3,6 +3,7 @@
 import { el, svg } from "./dom.js";
 import { stockChart } from "./stock-chart.js";
 import { graph } from "./charts.js";
+import { diagram } from "./diagram.js";
 import { photoFrame } from "./photo.js";
 
 const NAVY = "#2F3E5C";
@@ -71,6 +72,7 @@ export function turnThePage() {
 export function paragraph(p, i, ctx = {}) {
   if (p.chart) return stockChart(p.chart, i * 0.35);
   if (p.graph) return graph(p.graph, i * 0.35);
+  if (p.diagram) return diagram(p.diagram, i * 0.35);
   if (p.photo) return el("figure", { class: "embed embed-photo reveal", style: `animation-delay:${i * 0.35}s` }, photoFrame(p.photo));
   if (p.doc && ctx.renderDoc) {
     const { doc, nodes } = ctx.renderDoc(p.doc);
