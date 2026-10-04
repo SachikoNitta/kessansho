@@ -597,6 +597,7 @@ button { font: inherit; color: inherit; }
 .sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .sheet-head .it { font-size: 26px; color: var(--navy); font-weight: 400; }
 .sheet-head .hand { font-size: 13px; color: var(--muted); }
+.doc-source { font-size: 13px; color: var(--muted); margin-bottom: -4px; }
 
 /* タブは1行に並べ、収まらなければ左右にスクロールする */
 .tabs {
@@ -624,6 +625,42 @@ button { font: inherit; color: inherit; }
 }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--red); }
 
+/* 資料の束：インデックスシールと、重ねた紙 */
+.index-tabs {
+  overflow-y: hidden; gap: 3px; align-items: flex-end; margin-bottom: -14px; padding: 6px 8px 0; position: relative; z-index: 1;
+  /* 収まらないシールは、端で薄くして続きがあることを示す */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 18px), transparent);
+}
+.index-tabs .tab {
+  min-height: 0;
+  padding: 6px 11px 4px;
+  font-size: 13px;
+  color: var(--ink-soft, #4A4136);
+  background: var(--index);
+  border: none;
+  border-radius: 7px 7px 0 0;
+  box-shadow: inset 0 -5px 6px -5px rgba(40, 28, 14, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  filter: saturate(0.75) brightness(0.97);
+  transition: padding 0.15s ease, filter 0.15s ease;
+}
+.index-tabs .tab[aria-selected="true"] {
+  color: var(--ink);
+  font-weight: 700;
+  padding-bottom: 9px;
+  filter: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.doc-paper {
+  position: relative;
+  background: #FFFDF8;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--index, var(--line));
+  padding: 12px 12px 14px;
+  margin: 0 7px 7px 0;
+  /* 下に重なっている紙 */
+  box-shadow: 3px 3px 0 -1px #F3EDE0, 3px 3px 0 0 var(--line), 6px 6px 0 -1px #EAE2D1, 6px 6px 0 0 var(--line);
+}
 .sheet-body { overflow-y: auto; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
 .sheet-foot { display: flex; justify-content: flex-end; }
 

@@ -6,11 +6,17 @@ import { el } from "./dom.js";
  * 資料：タブを左右に並べて切り替える。問いの資料も、これまでの資料の綴りも同じ見せ方
  * @param {{ docs: object[], renderDoc: Function, title?: string, label?: string, foot?: string, initial?: number }} props
  */
+// 資料の束に貼るインデックスシールの色（順に繰り返す）
+const INDEX_COLORS = ["#F1D58E", "#BFD8B0", "#F0B9A8", "#B9CDE6", "#D9C4E3"];
+
+/**
+ * 資料：重ねた紙の束。上の辺にインデックスシールが並び、シールを押すとその資料が一番上に来る
+ */
 export function documentsSheet({ docs, renderDoc, title = "Documents", label = "資料", foot = "選択肢に戻る →", initial = 0 }) {
-  const body = el("div", { class: "sheet-body" });
-  const sub = el("span", { class: "hand" });
+  const body = el("div", { class: "sheet-body doc-paper" });
   const tabs = docs.map((doc, i) => el("button", {
     class: "tab",
+    style: `--index:${INDEX_COLORS[i % INDEX_COLORS.length]}`,
     role: "tab",
     "aria-selected": "false",
     onclick: () => select(i),
@@ -20,14 +26,16 @@ export function documentsSheet({ docs, renderDoc, title = "Documents", label = "
     tabs.forEach((b, j) => b.setAttribute("aria-selected", j === i ? "true" : "false"));
     // 紙が画面に出てから、選んだタブが見える位置までタブの列を送る
     requestAnimationFrame(() => tabs[i].scrollIntoView({ block: "nearest", inline: "nearest" }));
-    sub.textContent = docs[i].source || "";
-    body.replaceChildren(...renderDoc(docs[i]));
+    body.style.setProperty("--index", INDEX_COLORS[i % INDEX_COLORS.length]);
+    // 資料の出どころは、タブの下・資料の上に置く（見出しの横ではなく、選んだ資料に付ける）
+    const source = docs[i].source && el("div", { class: "doc-source hand" }, docs[i].source);
+    body.replaceChildren(...[source, ...renderDoc(docs[i])].filter(Boolean));
     body.scrollTop = 0;
   }
-  const tablist = el("div", { class: "tabs", role: "tablist" }, tabs);
+  const tablist = el("div", { class: "tabs index-tabs", role: "tablist" }, tabs);
   select(Math.min(initial, docs.length - 1));
 
-  return { title, label, sub, tabs: tablist, body, foot };
+  return { title, label, tabs: tablist, body, foot };
 }
 
 function noteList(caption, entries) {

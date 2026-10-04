@@ -1,6 +1,6 @@
 {
   "name": "kessansho",
-  "version": "0.9.5",
+  "version": "0.10.0",
   "private": true,
   "type": "module",
   "description": "決算書は嘘をつく — 決算書を読み解くモバイル向けミステリーノベル",
