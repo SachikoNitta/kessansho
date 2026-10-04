@@ -2,7 +2,7 @@
 // レンダラーは (doc, ctx) => Node[]。ctx.inference(id) は、得ている推論ならその一行、なければ null。
 
 import { el } from "./dom.js";
-import { illustration } from "./illustrations.js";
+import { photoFrame } from "./photo.js";
 import { graph as drawGraph } from "./charts.js";
 
 const isNumeric = (s) => /^[−\-]?[\d.,]+(%|万|億)?$/.test(String(s));
@@ -56,14 +56,7 @@ function site(doc) {
 
 /** 写真：ポラロイド風の枠。image（画像のパス）があれば画像、なければ illustration のスケッチ */
 function photo(doc) {
-  const picture = doc.image
-    ? el("img", { src: doc.image, alt: doc.caption || doc.label })
-    : illustration(doc.illustration);
-  return [el("div", { class: "photo" }, [
-    el("span", { class: "photo-tape", "aria-hidden": "true" }),
-    el("div", { class: "photo-frame" }, picture),
-    doc.caption && el("div", { class: "photo-caption" }, doc.caption),
-  ])];
+  return [photoFrame(doc)];
 }
 
 /** グラフの資料（答えに関わらない数字だけをグラフにする） */

@@ -66,7 +66,97 @@ function stage() {
   ]);
 }
 
-const ILLUSTRATIONS = { office, stage };
+// ---------- 白樺の食べもの（喫茶店のテーブルの上） ----------
+
+const WOOD = "#C9A27A";
+const PLATE = "#FBF8F1";
+
+function table(children) {
+  return [
+    svg("rect", { width: 320, height: 200, fill: WOOD }),
+    ...[30, 78, 126, 174].map((y) => line(`M 0 ${y} C 90 ${y - 6}, 200 ${y + 6}, 320 ${y - 2}`, 0.7, { opacity: 0.35 })),
+    ...children,
+  ];
+}
+
+function plate(cx, cy, rx, ry) {
+  return [
+    svg("ellipse", { cx, cy: cy + 4, rx, ry, fill: "rgba(60,40,20,0.18)" }),
+    svg("ellipse", { cx, cy, rx, ry, fill: PLATE, stroke: INK, "stroke-width": 1.2 }),
+    svg("ellipse", { cx, cy, rx: rx * 0.72, ry: ry * 0.72, fill: "none", stroke: INK, "stroke-width": 0.7, opacity: 0.45 }),
+  ];
+}
+
+function cup(cx, cy, s = 1) {
+  return svg("g", { transform: `translate(${cx} ${cy}) scale(${s})` }, [
+    ...plate(0, 18, 62, 24),
+    shape("M -36 -6 C -34 26, -22 38, 0 38 C 22 38, 34 26, 36 -6 Z", PLATE),
+    shape("M 34 2 C 52 0, 54 22, 30 24", "none"),
+    svg("ellipse", { cx: 0, cy: -6, rx: 36, ry: 12, fill: PLATE, stroke: INK, "stroke-width": 1.2 }),
+    svg("ellipse", { cx: 0, cy: -5, rx: 30, ry: 9, fill: "#4A2C1D" }),
+    svg("ellipse", { cx: -8, cy: -7, rx: 9, ry: 2.5, fill: "#7A4E33", opacity: 0.8 }),
+    line("M -54 30 L -18 22", 2.2), svg("ellipse", { cx: -56, cy: 31, rx: 5, ry: 3, fill: "#B7B2A8", stroke: INK, "stroke-width": 0.8 }),
+    line("M -10 -24 C -16 -34, -4 -40, -10 -52", 1, { opacity: 0.55 }),
+    line("M 6 -22 C 0 -34, 12 -40, 6 -54", 1, { opacity: 0.55 }),
+  ]);
+}
+
+/** 白樺のブレンド */
+function coffee() {
+  return svg("svg", { viewBox: "0 0 320 200", role: "img", "aria-label": "湯気の立つブレンドコーヒーのスケッチ" }, table([cup(160, 104, 1.25)]));
+}
+
+/** バタートースト二枚 */
+function toast() {
+  const slice = (x, y, r) => svg("g", { transform: `translate(${x} ${y}) rotate(${r})` }, [
+    shape("M -34 -30 C -40 -44, -18 -50, -6 -40 C 6 -50, 30 -46, 30 -30 L 30 30 C 30 34, 26 36, 22 36 L -30 36 C -34 36, -36 32, -34 28 Z", "#A86B2F"),
+    shape("M -28 -26 C -32 -36, -16 -42, -6 -34 C 4 -42, 24 -38, 24 -26 L 24 28 L -28 28 Z", "#E2B26A", { "stroke-width": 0.6 }),
+    ...[[-14, -10], [8, 4], [-6, 16]].map(([bx, by]) => line(`M ${bx - 5} ${by} L ${bx + 5} ${by + 2}`, 0.8, { opacity: 0.4 })),
+    shape("M -10 -8 L 8 -10 L 10 4 L -8 6 Z", "#F3DC8A", { "stroke-width": 0.8 }),
+    svg("path", { d: "M -8 6 C -10 12, -4 14, -2 8", fill: "#F3DC8A", opacity: 0.8 }),
+  ]);
+  return svg("svg", { viewBox: "0 0 320 200", role: "img", "aria-label": "皿にのったバタートースト二枚のスケッチ" }, table([
+    ...plate(150, 108, 118, 64),
+    slice(116, 104, -8), slice(186, 110, 10),
+    cup(282, 52, 0.55),
+  ]));
+}
+
+/** 卵サンド */
+function eggSando() {
+  const sando = (x, y, flip) => svg("g", { transform: `translate(${x} ${y}) scale(${flip} 1)` }, [
+    shape("M -40 26 L 40 26 L 0 -34 Z", "#F6EBD3"),
+    shape("M -34 18 L 34 18 L 28 10 L -28 10 Z", "#F2D46B", { "stroke-width": 0.8 }),
+    ...[-18, -4, 10].map((ex) => svg("circle", { cx: ex, cy: 14, r: 1.6, fill: "#FBF4DC" })),
+    line("M -40 26 L 40 26", 1.4),
+  ]);
+  return svg("svg", { viewBox: "0 0 320 200", role: "img", "aria-label": "卵サンドのスケッチ" }, table([
+    ...plate(148, 112, 110, 58),
+    sando(112, 108, 1), sando(178, 116, -1),
+    svg("circle", { cx: 214, cy: 82, r: 7, fill: "#7FA05A", stroke: INK, "stroke-width": 0.8 }),
+    cup(278, 58, 0.5),
+  ]));
+}
+
+/** ナポリタン */
+function napolitan() {
+  const noodles = [];
+  for (let i = 0; i < 16; i++) {
+    const y = 84 + (i % 8) * 6;
+    const x = 100 + (i * 13) % 90;
+    noodles.push(line(`M ${x} ${y} C ${x + 24} ${y - 14}, ${x + 40} ${y + 16}, ${x + 66} ${y - 4}`, 3.2, { stroke: "#D9692E", opacity: 0.9 }));
+  }
+  return svg("svg", { viewBox: "0 0 320 200", role: "img", "aria-label": "ナポリタンのスケッチ" }, table([
+    ...plate(160, 108, 126, 66),
+    svg("ellipse", { cx: 160, cy: 104, rx: 82, ry: 38, fill: "#E58A4E", stroke: INK, "stroke-width": 1 }),
+    ...noodles,
+    ...[[130, 92], [176, 112], [202, 92]].map(([x, y]) => svg("circle", { cx: x, cy: y, r: 7, fill: "#B9533A", stroke: INK, "stroke-width": 0.8 })),
+    ...[[150, 118], [188, 88], [118, 112]].map(([x, y]) => svg("path", { d: `M ${x - 7} ${y} C ${x - 4} ${y - 7}, ${x + 4} ${y - 7}, ${x + 7} ${y} C ${x + 4} ${y - 3}, ${x - 4} ${y - 3}, ${x - 7} ${y} Z`, fill: "#6E9A4B", stroke: INK, "stroke-width": 0.7 })),
+    line("M 252 70 L 286 170", 2.4), line("M 246 70 L 252 70 M 248 62 L 252 70 M 254 62 L 252 70 M 258 66 L 252 70", 1.2),
+  ]));
+}
+
+const ILLUSTRATIONS = { office, stage, coffee, toast, eggSando, napolitan };
 
 export function illustration(name) {
   const draw = ILLUSTRATIONS[name];
