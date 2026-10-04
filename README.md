@@ -12,16 +12,32 @@
 npm start          # http://localhost:8080 を開く（python3 の簡易サーバー）
 npm test           # 単体テスト・ケースの検証・依存の向き・オフライン用キャッシュの漏れ
 npm run validate   # ケースごとの概要（シーン数、全問正解の確度と結末）を表示
+npm run build      # dist/ に Web 版を出力
 ```
 
 ビルドは不要です（ES Modules）。ホーム画面に追加すればオフラインでも遊べます（PWA）。
+
+## リリース（Web 版）
+
+GitHub Actions でビルドし、**GitHub Pages に公開**して、**Release に zip を添付**します。
+
+- Web 版：https://sachikonitta.github.io/kessansho/ （スマホのブラウザで開き、「ホーム画面に追加」でアプリのように起動）
+- 表紙の下に `ver 0.3.0` のように版が出るので、スマホで最新版かどうか確かめられる
+
+出し方：
+
+1. 初回だけ、リポジトリの **Settings → Pages → Source** を **GitHub Actions** にする
+2. **Actions → Release → Run workflow** で版（例：`0.3.0`）を入れて実行（スマホのブラウザからも可）
+3. テスト → ビルド → Pages に公開 → Release（`v0.3.0`、zip 添付、Web 版の URL 入り）の順に進む
+
+ビルドだけ手元で試すとき：`node scripts/build.js 0.3.0` → `dist/` に出力。プッシュのたびに CI がテストとビルドを確かめます。
 
 ## ケースの配布方針
 
 **ケースはアプリに同梱し、アプリのアップデートで追加・更新します。** 外部サーバーからの配信は行いません。
 
 - ケースの追加・修正は、アプリの新しい版として出す
-- 出すときは `sw.js` の `CACHE` の版を上げる（端末のキャッシュが入れ替わる）
+- リリースのビルドが `sw.js` の `CACHE` に版を書き込むので、新しい版を開くと端末のキャッシュが入れ替わる
 - セーブと結末の記録はケースごとに端末に保存されるので、ケースを足しても既存のセーブは消えない
 
 ## 構成
@@ -75,7 +91,7 @@ cases/
 
 1. `cases/_template/case.js` を `cases/<ケースid>/case.js` にコピーして書く
 2. `cases/catalog.js` に1行足す（公開前は `status: "locked"` で「調査中」として出せる）
-3. `sw.js` の `ASSETS` にファイルを足し、`CACHE` の版を上げる
+3. `sw.js` の `ASSETS` にファイルを足す（ここが配布ファイルの一覧も兼ねる）
 4. `npm test` を通す
 
 書き方（`src/authoring/case-builder.js`）：

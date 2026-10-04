@@ -1,6 +1,7 @@
 // 組み立て（コンポジションルート）。具体的な実装を選んで注入するのは、このファイルだけ。
 
 import catalog from "../cases/catalog.js";
+import { VERSION } from "./version.js";
 import { CaseSession } from "./core/session.js";
 import { createConditionEvaluator } from "./core/conditions.js";
 import { ProgressStore } from "./core/progress.js";
@@ -20,6 +21,7 @@ const app = new App({
   root,
   sheet: new Sheet(document.getElementById("sheet-root"), root),
   title: "決算書は嘘をつく",
+  version: VERSION,
   repository: new BundledCaseRepository(catalog),
   progress: new ProgressStore(store),
   preferences: new Preferences(store),

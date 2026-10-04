@@ -17,10 +17,10 @@ export class App {
   #session = null;
   #summary = null;
 
-  constructor({ root, sheet, title, repository, progress, preferences, createSession, sceneViews, docRenderers }) {
+  constructor({ root, sheet, title, version, repository, progress, preferences, createSession, sceneViews, docRenderers }) {
     this.#root = root;
     this.#sheet = sheet;
-    this.#deps = { title, repository, progress, preferences, createSession, sceneViews, docRenderers };
+    this.#deps = { title, version, repository, progress, preferences, createSession, sceneViews, docRenderers };
   }
 
   start() {
@@ -34,6 +34,7 @@ export class App {
     this.#session = null;
     this.#mount(coverScreen({
       title: this.#deps.title,
+      version: this.#deps.version,
       onOpen: () => this.showCases(),
       onSettings: () => this.#openSettings(),
       onRecords: () => this.#openRecords(),

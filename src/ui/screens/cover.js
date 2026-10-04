@@ -2,8 +2,8 @@
 
 import { el, svg } from "../dom.js";
 
-/** @param {{ title: string, onOpen: Function, onSettings: Function, onRecords: Function }} props */
-export function coverScreen({ title, onOpen, onSettings, onRecords }) {
+/** @param {{ title: string, version?: string, onOpen: Function, onSettings: Function, onRecords: Function }} props */
+export function coverScreen({ title, version, onOpen, onSettings, onRecords }) {
   const [pre, main] = splitTitle(title);
 
   const arc = svg("svg", { class: "cover-arc", viewBox: "0 0 390 200", "aria-hidden": "true" }, [
@@ -46,6 +46,7 @@ export function coverScreen({ title, onOpen, onSettings, onRecords }) {
         el("br"),
         "本作に登場する企業・人物・数値はすべて架空です。",
       ]),
+      version && el("div", { class: "version" }, `ver ${version}`),
     ]),
   ]);
 }

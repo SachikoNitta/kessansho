@@ -1,0 +1,111 @@
+# リリース：テスト → Web 版をビルド → GitHub Pages に公開 → Release を作って zip を添付。
+# Actions タブの「Release」→「Run workflow」で版（例：0.3.0）を入れて実行する（スマホのブラウザからも可）。
+# 初回だけ、リポジトリの Settings → Pages → Source を「GitHub Actions」にしておくこと。
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版（例：0.3.0）"
+        required: true
+      notes:
+        description: "リリースノート（省略可）"
+        required: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 版を確かめる
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          v="${INPUT_VERSION#v}"
+          if [[ ! "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::版は 0.3.0 の形で入力してください（入力：$INPUT_VERSION）"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then
+            echo "::error::v$v はすでにリリース済みです。別の版を入力してください"
+            exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: テスト
+        run: npm test
+
+      - name: ビルド
+        run: node scripts/build.js "${{ steps.version.outputs.version }}"
+
+      - name: zip にまとめる
+        run: cd dist && zip -qr "../kessansho-v${{ steps.version.outputs.version }}-web.zip" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-zip
+          path: kessansho-v${{ steps.version.outputs.version }}-web.zip
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  release:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-zip
+
+      - name: Release を作る
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          {
+            if [ -n "$NOTES" ]; then printf '%s\n\n' "$NOTES"; fi
+            printf '**Web 版で遊ぶ：** %s\n\n' "$PAGE_URL"
+            printf 'スマホでは、開いてから「ホーム画面に追加」するとアプリのように起動できます。\n'
+          } > notes.md
+          gh release create "v$VERSION" "kessansho-v$VERSION-web.zip" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "v$VERSION" \
+            --notes-file notes.md

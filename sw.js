@@ -1,5 +1,5 @@
 // オフラインでも遊べるよう、アプリ本体と同梱ケースをすべてキャッシュする。
-// ケースはアプリに同梱し、アップデートで更新する。更新を出すときは CACHE の版を上げる。
+// ケースはアプリに同梱し、アップデートで更新する。リリースのビルドが CACHE に版を書き込む。
 // ASSETS の漏れは tests/offline.test.js が検出する。
 const CACHE = "kessansho-v3";
 const ASSETS = [
@@ -9,6 +9,7 @@ const ASSETS = [
   "manifest.webmanifest",
   "icons/icon.svg",
   "src/main.js",
+  "src/version.js",
   "src/core/contracts.js",
   "src/core/conditions.js",
   "src/core/session.js",
