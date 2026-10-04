@@ -48,7 +48,7 @@ test("文字の色は、紙の上で 4.5:1 以上のコントラスト", () => {
 });
 
 test("押せるものは高さ 48px 以上", () => {
-  for (const selector of [".link", ".link.underline", ".cover-menu button", ".docs-fab", ".option", ".tab", ".index-tabs .tab", ".menu-item"]) {
+  for (const selector of [".link", ".link.underline", ".cover-menu button", ".docs-fab", ".option", ".doc-row", ".menu-item"]) {
     const m = block(selector).match(/min-height:\s*(\d+)px/);
     assert.ok(m, `${selector} に min-height がない`);
     assert.ok(Number(m[1]) >= 48, `${selector}: ${m[1]}px`);

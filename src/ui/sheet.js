@@ -19,22 +19,22 @@ export class Sheet {
   get isOpen() { return !!this.#root.firstChild; }
 
   /**
-   * @param {{ title: string, label?: string, sub?: string|Node, tabs?: Node, body: Node, foot?: string }} content
+   * @param {{ title: string, label?: string, sub?: string|Node, body: Node, foot?: string, wide?: boolean }} content
+   *   wide: 画面いっぱいの紙（資料を大きく読むとき）
    */
-  open({ title, label, sub, tabs, body, foot }) {
+  open({ title, label, sub, body, foot, wide = false }) {
     this.#returnFocus = document.activeElement;
     const closeBtn = el("button", { class: "link underline", onclick: () => this.close() }, foot || "閉じる →");
     const desk = el("div", {
-      class: "desk",
+      class: wide ? "desk wide" : "desk",
       onclick: (e) => { if (e.target === desk) this.close(); },
     }, [
-      el("div", { class: "sheet", role: "dialog", "aria-modal": "true", "aria-label": label || title }, [
+      el("div", { class: wide ? "sheet wide" : "sheet", role: "dialog", "aria-modal": "true", "aria-label": label || title }, [
         paperClip(),
         el("div", { class: "sheet-head" }, [
           el("span", { class: "it" }, title),
           typeof sub === "string" ? el("span", { class: "hand" }, sub) : sub,
         ]),
-        tabs,
         body,
         el("div", { class: "sheet-foot" }, closeBtn),
       ]),

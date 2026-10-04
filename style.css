@@ -638,89 +638,46 @@ button { font: inherit; color: inherit; }
 .sheet-head .hand { font-size: 13px; color: var(--muted); }
 .doc-source { font-size: 13px; color: var(--muted); margin-bottom: -4px; }
 
-/* タブは1行に並べ、収まらなければ左右にスクロールする */
-.tabs {
-  display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  margin-inline: -4px;
-  padding-inline: 4px;
+/* 資料の綴り：画面いっぱいの紙に、一覧と一枚ずつの資料 */
+.desk.wide { padding: calc(env(safe-area-inset-top) + 28px) 10px calc(env(safe-area-inset-bottom) + 12px); }
+.sheet.wide { max-width: 480px; height: 100%; padding: 28px 16px 12px; gap: 10px; transform: rotate(-0.4deg); animation-name: drop-wide; }
+@keyframes drop-wide { from { opacity: 0; transform: translateY(24px) rotate(-1.5deg); } to { opacity: 1; transform: rotate(-0.4deg); } }
+.sheet.wide .sheet-head .it { font-size: 22px; }
+.binder { gap: 14px; }
+.binder > * { flex: none; }
+.doc-group { display: flex; flex-direction: column; }
+.doc-group-title { font-size: 13px; color: var(--muted); padding: 4px 0 6px; }
+.doc-row {
+  all: unset; cursor: pointer; box-sizing: border-box;
+  min-height: 60px; padding: 8px 4px; display: flex; align-items: center; gap: 12px;
+  border-top: 1px solid var(--line);
 }
-.tabs::-webkit-scrollbar { display: none; }
-.tabs .tab { flex: none; white-space: nowrap; scroll-snap-align: start; }
-.tab {
-  all: unset;
-  cursor: pointer;
-  font-family: var(--hand);
-  font-size: 15px;
-  color: var(--faint);
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  border-bottom: 2px solid transparent;
-}
-.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--red); }
+.doc-group .doc-row:last-child { border-bottom: 1px solid var(--line); }
+.doc-chip { flex: none; width: 10px; align-self: stretch; border-radius: 3px; background: var(--index); }
+.doc-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.doc-row-label { font-size: 16px; font-weight: 700; color: var(--ink); }
+.doc-row-source { font-size: 12px; color: var(--muted); }
+.doc-row-go { font-size: 22px; color: var(--faint); }
+.doc-row.marked .doc-row-label::after { content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 8px; border-radius: 50%; background: var(--red); vertical-align: 3px; }
+.doc-row:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.binder-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: -6px; }
+.binder-pos { font-size: 13px; color: var(--muted); }
+.binder-nav { display: flex; justify-content: space-between; gap: 12px; }
+.binder-nav .link { max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; line-height: 48px; }
+.binder-nav .link:disabled { visibility: hidden; }
+.doc-paper-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+.doc-paper-label { font-size: 18px; font-weight: 700; color: var(--ink); }
 
-/* 資料の束：インデックスシールと、重ねた紙 */
-.index-tabs {
-  overflow-y: hidden; gap: 3px; align-items: flex-end; margin-bottom: -14px; padding: 0 8px; position: relative; z-index: 1;
-  /* 収まらないシールは、端で薄くして続きがあることを示す */
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 18px), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 18px), transparent);
-}
-.index-tabs .tab {
-  position: relative;
-  isolation: isolate;
-  min-height: 48px; /* 押せる範囲は 48px。色のついたシールは下の 40px だけ */
-  box-sizing: border-box;
-  align-items: flex-end;
-  padding: 0 12px 6px;
-  font-size: 14px;
-  color: var(--ink-soft);
-  border: none;
-  filter: saturate(0.75) brightness(0.97);
-  transition: filter 0.15s ease;
-}
-.index-tabs .tab::before {
-  content: "";
-  position: absolute;
-  inset: 8px 0 0;
-  z-index: -1;
-  background: var(--index);
-  border-radius: 7px 7px 0 0;
-  box-shadow: inset 0 -5px 6px -5px rgba(40, 28, 14, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-  transition: inset 0.15s ease;
-}
-.index-tabs .tab[aria-selected="true"] {
-  color: var(--ink);
-  font-weight: 700;
-  min-height: 53px;
-  padding-bottom: 11px;
-  filter: none;
-}
-/* いまの問いの資料：シールの右上に赤い印 */
-.index-tabs .tab.marked::after {
-  content: "";
-  position: absolute;
-  top: 12px;
-  right: 5px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--red);
-}
-.index-tabs .tab.marked[aria-selected="true"]::after { top: 5px; }
-.index-tabs .tab[aria-selected="true"]::before { inset: 0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5); }
 .doc-paper {
   position: relative;
   background: #FFFDF8;
   border: 1px solid var(--line);
   border-top: 4px solid var(--index, var(--line));
-  padding: 12px 12px 14px;
+  padding: 14px 14px 16px;
   margin: 0 7px 7px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   /* 下に重なっている紙 */
   box-shadow: 3px 3px 0 -1px #F3EDE0, 3px 3px 0 0 var(--line), 6px 6px 0 -1px #EAE2D1, 6px 6px 0 0 var(--line);
 }

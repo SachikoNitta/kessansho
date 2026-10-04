@@ -115,19 +115,17 @@ export class App {
     };
   }
 
-  /** これまでの資料の束。focus（いまの問いの資料）があればそれを、なければいちばん新しい資料を開く */
+  /** これまでの資料の綴り。focus（いまの問いの資料）があれば、その一枚目を開いた状態で出す */
   #openArchive(focus = []) {
     const docs = this.#session.definition.docs;
-    const ids = this.#session.seenDocs;
-    const at = focus.length ? ids.indexOf(focus[0]) : -1;
+    const seen = this.#session.seenDocs.map((id) => docs[id]);
+    const marked = focus.map((id) => docs[id]).filter((d) => seen.includes(d));
     this.#sheet.open(documentsSheet({
-      docs: ids.map((id) => docs[id]),
+      docs: seen,
       renderDoc: this.#renderDoc(),
-      title: focus.length ? "Documents" : "Case File",
-      label: "資料",
-      foot: focus.length ? "選択肢に戻る →" : "閉じる →",
-      initial: at >= 0 ? at : ids.length - 1,
-      marked: focus.map((id) => docs[id]),
+      marked,
+      focus: marked[0] || null,
+      foot: marked.length ? "選択肢に戻る →" : "閉じる →",
     }));
   }
 

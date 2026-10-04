@@ -1,4 +1,4 @@
-// 紙（Sheet）に載せる中身。どれも Sheet.open に渡す { title, sub, tabs, body, foot } を返す。
+// 紙（Sheet）に載せる中身。どれも Sheet.open に渡す { title, sub, body, foot, wide } を返す。
 
 import { el } from "./dom.js";
 
@@ -6,42 +6,68 @@ import { el } from "./dom.js";
  * 資料：タブを左右に並べて切り替える。問いの資料も、これまでの資料の綴りも同じ見せ方
  * @param {{ docs: object[], renderDoc: Function, title?: string, label?: string, foot?: string, initial?: number }} props
  */
-// 資料の束に貼るインデックスシールの色（順に繰り返す）
-const INDEX_COLORS = ["#F1D58E", "#BFD8B0", "#F0B9A8", "#B9CDE6", "#D9C4E3"];
+// 資料ごとの色（一覧の見出しの印と、紙の上辺に使う）
+const DOC_COLORS = ["#E2BC5C", "#8DB57A", "#D98B76", "#7E9FCB", "#B392C6"];
 
 /**
- * 資料：重ねた紙の束。上の辺にインデックスシールが並び、シールを押すとその資料が一番上に来る
+ * 資料の綴り：画面いっぱいの紙に、一覧と一枚ずつの資料。
+ *   一覧 … これまでの資料（新しい順）。問いの資料（marked）は「この問いの資料」として先頭にまとめる
+ *   一枚 … 資料を大きく出し、「← 一覧」と、前後の資料へ送るボタン
+ * focus があればその資料を開いた状態で、なければ一覧で開く
  */
-export function documentsSheet({ docs, renderDoc, title = "Documents", label = "資料", foot = "選択肢に戻る →", initial = 0, marked = [] }) {
-  const { tabs, body } = documentsBundle({ docs, renderDoc, initial, marked });
-  return { title, label, tabs, body, foot };
-}
+export function documentsSheet({ docs, renderDoc, marked = [], focus = null, foot = "閉じる →" }) {
+  const color = (doc) => DOC_COLORS[docs.indexOf(doc) % DOC_COLORS.length];
+  const others = docs.filter((d) => !marked.includes(d)).reverse();
+  const order = [...marked, ...others];
+  const body = el("div", { class: "sheet-body binder" });
 
-/** 資料の束（インデックスシールの列と、一番上の紙）。marked の資料（いまの問いの資料）のシールには印を付ける */
-export function documentsBundle({ docs, renderDoc, initial = 0, marked = [] }) {
-  const body = el("div", { class: "sheet-body doc-paper" });
-  const tabs = docs.map((doc, i) => el("button", {
-    class: marked.includes(doc) ? "tab marked" : "tab",
-    style: `--index:${INDEX_COLORS[i % INDEX_COLORS.length]}`,
-    role: "tab",
-    "aria-selected": "false",
-    onclick: () => select(i),
-  }, doc.label));
+  const row = (doc) => el("button", {
+    class: "doc-row" + (marked.includes(doc) ? " marked" : ""),
+    style: `--index:${color(doc)}`,
+    onclick: () => showDoc(doc),
+  }, [
+    el("span", { class: "doc-chip", "aria-hidden": "true" }),
+    el("span", { class: "doc-row-text" }, [el("span", { class: "doc-row-label" }, doc.label), doc.source && el("span", { class: "doc-row-source" }, doc.source)]),
+    el("span", { class: "doc-row-go", "aria-hidden": "true" }, "›"),
+  ]);
 
-  function select(i) {
-    tabs.forEach((b, j) => b.setAttribute("aria-selected", j === i ? "true" : "false"));
-    // 紙が画面に出てから、選んだタブが見える位置までタブの列を送る
-    requestAnimationFrame(() => tabs[i].scrollIntoView({ block: "nearest", inline: "center" }));
-    body.style.setProperty("--index", INDEX_COLORS[i % INDEX_COLORS.length]);
-    // 資料の出どころは、タブの下・資料の上に置く（見出しの横ではなく、選んだ資料に付ける）
-    const source = docs[i].source && el("div", { class: "doc-source hand" }, docs[i].source);
-    body.replaceChildren(...[source, ...renderDoc(docs[i])].filter(Boolean));
+  function showList() {
+    body.replaceChildren(
+      marked.length > 0 && el("div", { class: "doc-group" }, [el("div", { class: "doc-group-title hand" }, "この問いの資料"), ...marked.map(row)]),
+      others.length > 0 && el("div", { class: "doc-group" }, [el("div", { class: "doc-group-title hand" }, marked.length ? "これまでの資料" : "これまでの資料（新しい順）"), ...others.map(row)]),
+    );
     body.scrollTop = 0;
   }
-  const tablist = el("div", { class: "tabs index-tabs", role: "tablist" }, tabs);
-  select(Math.min(initial, docs.length - 1));
 
-  return { tabs: tablist, body };
+  function showDoc(doc) {
+    const i = order.indexOf(doc);
+    const prev = order[i - 1];
+    const next = order[i + 1];
+    const paper = el("div", { class: "doc-paper", style: `--index:${color(doc)}` }, [
+      el("div", { class: "doc-paper-head" }, [
+        el("span", { class: "doc-paper-label" }, doc.label),
+        doc.source && el("span", { class: "doc-source hand" }, doc.source),
+      ]),
+      ...renderDoc(doc),
+    ]);
+    body.replaceChildren(
+      el("div", { class: "binder-bar" }, [
+        el("button", { class: "link", onclick: showList }, "← 資料の一覧"),
+        el("span", { class: "hand binder-pos" }, `${i + 1} / ${order.length}`),
+      ]),
+      paper,
+      el("div", { class: "binder-nav" }, [
+        el("button", { class: "link", disabled: !prev, onclick: () => prev && showDoc(prev) }, prev ? `‹ ${prev.label}` : ""),
+        el("button", { class: "link", disabled: !next, onclick: () => next && showDoc(next) }, next ? `${next.label} ›` : ""),
+      ]),
+    );
+    body.scrollTop = 0;
+  }
+
+  if (focus && docs.includes(focus)) showDoc(focus);
+  else showList();
+
+  return { title: "Case File", label: "資料", body, foot, wide: true };
 }
 
 function noteList(caption, entries) {
