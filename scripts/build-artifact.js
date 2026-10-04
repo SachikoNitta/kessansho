@@ -16,6 +16,7 @@ const bundle = await build({
   format: "iife",
   target: "es2020",
   minify: true,
+  charset: "utf8",
   write: false,
   define: { __ARTIFACT__: "true" },
   plugins: [{
