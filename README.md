@@ -32,6 +32,19 @@ GitHub Actions でビルドし、**GitHub Pages に公開**して、**Release �
 
 ビルドだけ手元で試すとき：`node scripts/build.js 0.3.0` → `dist/` に出力。プッシュのたびに CI がテストとビルドを確かめます。
 
+## 非公開のプレビュー（Claude の Artifact）
+
+公開せずにスマホで確かめるときは、アプリ全体を 1 枚の HTML にまとめて Claude の非公開ページに載せます。
+
+```sh
+npm install                                   # 初回だけ（esbuild）
+node scripts/build-artifact.js 0.3.0          # dist-artifact/index.html に出力
+```
+
+- 表紙の版は `ver 0.3.0-preview` と出る
+- Artifact では Service Worker を使わない（オフライン対応は GitHub Pages 版のみ）
+- セーブは、そのページを開いた端末のブラウザごとに保存される
+
 ## ケースの配布方針
 
 **ケースはアプリに同梱し、アプリのアップデートで追加・更新します。** 外部サーバーからの配信は行いません。

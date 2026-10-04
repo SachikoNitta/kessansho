@@ -32,6 +32,8 @@ const app = new App({
 
 app.start();
 
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
+// Artifact 用ビルドでは Service Worker を使わない（scripts/build-artifact.js が __ARTIFACT__ を true にする）
+const isArtifact = typeof __ARTIFACT__ !== "undefined" && __ARTIFACT__;
+if (!isArtifact && "serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("sw.js").catch(() => { /* オフライン対応は任意 */ });
 }

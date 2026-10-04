@@ -86,6 +86,7 @@ export function recordsSheet({ entries }) {
 export function settingsSheet({ largeText, onToggleLargeText, onClearAll }) {
   const sizeValue = el("span", { class: "hand" }, largeText ? "大きめ" : "標準");
   const clearValue = el("span", { class: "hand" }, "セーブと記録");
+  let armed = false;
   return {
     title: "Settings",
     label: "設定",
@@ -99,7 +100,14 @@ export function settingsSheet({ largeText, onToggleLargeText, onClearAll }) {
         el("button", {
           class: "menu-item",
           onclick: () => {
-            if (!window.confirm("すべてのケースのセーブと結末の記録を消します。よろしいですか？")) return;
+            // 確認ダイアログは使えない環境があるので、二度押しで確かめる
+            if (!armed) {
+              armed = true;
+              clearValue.textContent = "もう一度押すと消えます";
+              setTimeout(() => { if (armed) { armed = false; clearValue.textContent = "セーブと記録"; } }, 4000);
+              return;
+            }
+            armed = false;
             onClearAll();
             clearValue.textContent = "消しました";
           },
