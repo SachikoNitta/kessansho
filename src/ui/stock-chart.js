@@ -22,6 +22,16 @@ function frame(before, values) {
   const hi = Math.max(...all);
   const pad = (hi - lo) * 0.08 || hi * 0.05;
   const y = (v) => H - PAD - ((v - (lo - pad)) / (hi - lo + pad * 2)) * (H - PAD * 2);
+  // 値段の目盛り：1,000円ごと（幅が狭ければ 500・200・100円ごと）に横線と数字
+  const step = [1000, 500, 200, 100].find((s) => Math.floor((hi + pad) / s) - Math.ceil((lo - pad) / s) >= 2) || 100;
+  const ticks = [];
+  for (let v = Math.ceil((lo - pad) / step) * step; v <= hi + pad; v += step) ticks.push(v);
+  const grid = [
+    ...ticks.map((v) => svg("line", { class: "ticker-grid", x1: PAD, x2: W - PAD, y1: y(v), y2: y(v) })),
+    svg("line", { class: "ticker-yaxis", x1: PAD, x2: PAD, y1: 0, y2: H }),
+  ];
+  const axis = el("div", { class: "ticker-axis", "aria-hidden": "true" },
+    ticks.map((v) => el("span", { style: `top:${(y(v) / H) * 100}%` }, yen(v))));
   const x0 = before.length ? PAD + (W - PAD * 2) * SPLIT : PAD;
   const past = before.length > 1
     ? [svg("path", {
@@ -29,7 +39,7 @@ function frame(before, values) {
         d: before.map((v, i) => `${i ? "L" : "M"} ${(PAD + (i / (before.length - 1)) * (x0 - PAD)).toFixed(1)} ${y(v).toFixed(1)}`).join(" "),
       })]
     : [];
-  return { y, x0, past };
+  return { y, x0, past, grid, axis };
 }
 
 /**
@@ -46,7 +56,7 @@ export function stockChart(chart, delay = 0) {
   const dir = diff > 0 ? "up" : diff < 0 ? "down" : "flat";
   const sign = diff > 0 ? "+" : diff < 0 ? "−" : "±";
 
-  const { y, x0, past } = frame(before, points);
+  const { y, x0, past, grid, axis } = frame(before, points);
   const x = (i) => x0 + (i / (points.length - 1)) * (W - PAD - x0);
   const d = points.map((v, i) => `${i ? "L" : "M"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
 
@@ -56,14 +66,14 @@ export function stockChart(chart, delay = 0) {
       el("span", { class: "ticker-name" }, chart.name),
       el("span", { class: "ticker-now" }, [price, el("small", {}, "円")]),
     ]),
-    svg("svg", { class: "ticker-chart", viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", role: "img",
+    plot(axis, svg("svg", { class: "ticker-chart", viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", role: "img",
       "aria-label": `${chart.name}${before.length ? ` ${yen(before[0])}円から上がり続け、` : " "}${yen(first)}円から${yen(last)}円へ（${sign}${Math.abs(pct).toFixed(1)}%）` }, [
+      ...grid,
       ...past,
       svg("line", { class: "ticker-base", x1: x0, x2: W - PAD, y1: y(first), y2: y(first) }),
       svg("path", { class: "ticker-line", d, pathLength: "1", style: `animation-delay:${delay + 0.2}s` }),
       svg("circle", { class: "ticker-dot", cx: x(points.length - 1), cy: y(last), r: 3.5, style: `animation-delay:${delay + 1.4}s` }),
-    ]),
-    ends(before[0] ?? first, last, delay),
+    ])),
     el("div", { class: "ticker-foot" }, [
       el("span", { class: "ticker-chg" }, `${dir === "up" ? "▲" : dir === "down" ? "▼" : "―"} ${yen(Math.abs(diff))}円（${sign}${Math.abs(pct).toFixed(1)}%）`),
       chart.note && el("span", { class: "ticker-note" }, chart.note),
@@ -75,12 +85,9 @@ export function stockChart(chart, delay = 0) {
   return figure;
 }
 
-/** チャートの左端と右端（終値）の値段 */
-function ends(left, last, delay) {
-  return el("div", { class: "ticker-ends" }, [
-    el("span", {}, `${yen(left)}円`),
-    el("span", { class: "ticker-end-last", style: `animation-delay:${delay + 1.4}s` }, `${yen(last)}円`),
-  ]);
+/** 左に値段の目盛り、右にチャート */
+function plot(axis, chart) {
+  return el("div", { class: "ticker-plot" }, [axis, chart]);
 }
 
 /** 表示中の数字を動かす。全文表示のタップ（data-now）や動きを減らす設定では、すぐ最後の値へ */
@@ -110,7 +117,7 @@ function limitQuote(chart, delay) {
   const pct = (diff / close) * 100;
   const sign = down ? "−" : "+";
 
-  const { y, x0, past } = frame(before, [close, limit]);
+  const { y, x0, past, grid, axis } = frame(before, [close, limit]);
   const X0 = x0 + 8;
   const tip = y(limit) + (down ? -7 : 7);
 
@@ -133,8 +140,9 @@ function limitQuote(chart, delay) {
         price, el("small", {}, "円"),
       ]),
     ]),
-    svg("svg", { class: "ticker-chart", viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", role: "img",
+    plot(axis, svg("svg", { class: "ticker-chart", viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", role: "img",
       "aria-label": `${chart.name} 前日終値${yen(close)}円。${yen(limit)}円の${side}のまま、値がつかなかった。売り${yen(sell)}株、買い${yen(buy)}株` }, [
+      ...grid,
       ...past,
       svg("line", { class: "ticker-base", x1: x0, x2: W - PAD, y1: y(close), y2: y(close) }),
       svg("path", { class: "quote-drop", d: `M ${X0} ${y(close)} L ${X0} ${y(limit)}`, pathLength: "1", style: `animation-delay:${delay + 0.2}s` }),
@@ -143,8 +151,7 @@ function limitQuote(chart, delay) {
       svg("g", { class: "quote-line", style: `animation-delay:${delay + 0.8}s` },
         Array.from({ length: Math.floor((W - PAD - X0 - 8) / 8) + 1 }, (_, i) =>
           svg("circle", { cx: X0 + 8 + i * 8, cy: y(limit), r: 1.6 }))),
-    ]),
-    ends(before[0] ?? close, limit, delay),
+    ])),
     el("div", { class: "board", role: "table", "aria-label": "板" }, [
       row("売り", sell, "sell"),
       row("買い", buy, "buy"),
