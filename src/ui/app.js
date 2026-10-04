@@ -75,8 +75,7 @@ export class App {
       choose: (index) => this.#commit(this.#session.choose(index)),
       // 本文と同じ画面に出した分岐で選ぶ：本文を読み終えてから、その分岐で選ぶ
       chooseAhead: (index) => this.#commit([...this.#session.advance(), ...this.#session.choose(index)]),
-      openDocs: (ids) => this.#openDocs(ids),
-      openArchive: () => this.#openArchive(),
+      openArchive: (focus) => this.#openArchive(focus),
       renderDoc: (id) => {
         const doc = this.#session.definition.docs[id];
         return { doc, nodes: this.#renderDoc()(doc) };
@@ -116,22 +115,19 @@ export class App {
     };
   }
 
-  #openDocs(ids) {
+  /** これまでの資料の束。focus（いまの問いの資料）があればそれを、なければいちばん新しい資料を開く */
+  #openArchive(focus = []) {
     const docs = this.#session.definition.docs;
-    this.#sheet.open(documentsSheet({ docs: ids.map((id) => docs[id]), renderDoc: this.#renderDoc() }));
-  }
-
-  #openArchive() {
-    const docs = this.#session.definition.docs;
-    const seen = this.#session.seenDocs.map((id) => docs[id]);
-    // これまでの資料の綴り：いちばん新しく出てきた資料を開いた状態で見せる
+    const ids = this.#session.seenDocs;
+    const at = focus.length ? ids.indexOf(focus[0]) : -1;
     this.#sheet.open(documentsSheet({
-      docs: seen,
+      docs: ids.map((id) => docs[id]),
       renderDoc: this.#renderDoc(),
-      title: "Case File",
-      label: "これまでの資料",
-      foot: "閉じる →",
-      initial: seen.length - 1,
+      title: focus.length ? "Documents" : "Case File",
+      label: "資料",
+      foot: focus.length ? "選択肢に戻る →" : "閉じる →",
+      initial: at >= 0 ? at : ids.length - 1,
+      marked: focus.map((id) => docs[id]),
     }));
   }
 

@@ -1,19 +1,15 @@
 // シーンの種類ごとの画面。種類は登録制で、新しい種類は createSceneViews に足すだけ（App は変えない）。
 // view は ({ session, actions }) => Node。actions は App が渡す：
-//   next()  choose(index)  openDocs(docIds)  openArchive()  openMenu()  exitCase()  renderDoc(docId)
+//   next()  choose(index)  openArchive(focusDocIds?)  openMenu()  exitCase()  renderDoc(docId)
 //   chooseAhead(index)  本文と同じ画面に出した分岐で選ぶ
 
 import { el } from "../dom.js";
-import { wave, scribble, clipIcon, chapterHeader, turnThePage, paragraph } from "../decorations.js";
+import { wave, scribble, chapterHeader, docsButton, turnThePage, paragraph } from "../decorations.js";
 
 const NUMERALS = ["i.", "ii.", "iii.", "iv.", "v.", "vi."];
 
 function header(session, actions) {
-  return chapterHeader(session.definition.chapters[session.scene.chapter], {
-    onMenu: actions.openMenu,
-    onArchive: actions.openArchive,
-    archiveCount: session.seenDocs.length,
-  });
+  return chapterHeader(session.definition.chapters[session.scene.chapter], { onMenu: actions.openMenu });
 }
 
 // ---------- 読む ----------
@@ -79,6 +75,7 @@ function textView({ session, actions }) {
     wave(),
     tapArea,
     turnThePage(),
+    docsButton({ count: session.seenDocs.length, onClick: () => actions.openArchive() }),
   ]);
 }
 
@@ -101,18 +98,13 @@ function choiceScreen({ session, actions, choiceId, lead, choose }) {
   }, [el("span", { class: "num" }, NUMERALS[n] || ""), el("span", { class: "label" }, option.label)]));
   const qLine = el("div", { class: "q-line" }, [el("span", { class: "it" }, "Q."), el("span", { class: "text" }, scene.prompt)]);
 
-  const docsBtn = docs.length > 0 && el("button", { class: "docs-btn", onclick: () => actions.openDocs(docs), "aria-label": `資料を見る（${docs.length}件）` }, [
-    clipIcon(),
-    el("span", { class: "label" }, "資料を見る"),
-    el("span", { class: "count", "aria-hidden": "true" }, String(docs.length)),
-  ]);
-
   return el("section", { class: "screen" }, [
     header(session, actions),
     wave(),
     lead,
     el("div", { style: "flex:1;min-height:32px" }),
-    el("div", { class: "question" }, [qLine, docsBtn, el("div", {}, options)]),
+    el("div", { class: "question" }, [qLine, el("div", {}, options)]),
+    docsButton({ count: session.seenDocs.length, fresh: docs.length > 0, onClick: () => actions.openArchive(docs) }),
   ]);
 }
 

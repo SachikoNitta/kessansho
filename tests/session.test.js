@@ -97,7 +97,8 @@ test("条件評価器は未知の条件を拒み、種類を足せる", () => {
 test("分岐で出てきた資料を覚え、古い snapshot にも対応する", () => {
   const def = sampleCase();
   const s = new CaseSession(def, { conditions });
-  assert.deepEqual(s.seenDocs, []);
+  // 最初の本文の次が分岐なので、問いは本文と同じ画面に出る。その資料もはじめから手元にある
+  assert.deepEqual(s.seenDocs, ["d1"]);
   s.advance();
   assert.deepEqual(s.seenDocs, ["d1"]);
   s.choose(1);

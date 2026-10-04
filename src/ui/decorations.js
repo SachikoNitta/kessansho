@@ -42,19 +42,29 @@ export function paperClip() {
 }
 
 /** 「Chapter 1 違和感 ……… 資料 目次」のヘッダー。資料は一度でも出てきたら、いつでも開ける */
-export function chapterHeader(chapter, { onMenu, onArchive, archiveCount = 0 }) {
+export function chapterHeader(chapter, { onMenu }) {
   return el("header", { class: "header" }, [
     el("div", { class: "chapter" }, [
       el("span", { class: "it" }, chapter?.label || ""),
       el("span", { class: "title" }, chapter?.title || ""),
     ]),
     el("div", { class: "header-links" }, [
-      archiveCount > 0 && el("button", { class: "link", onclick: onArchive, "aria-label": `資料（${archiveCount}件）` }, [
-        clipIcon(), "資料", el("span", { class: "count", "aria-hidden": "true" }, String(archiveCount)),
-      ]),
       el("button", { class: "link", onclick: onMenu }, "目次"),
     ]),
   ]);
+}
+
+/**
+ * 資料の札：いつも画面の右下（親指の届くところ）にあり、これまでの資料をすべて開ける。
+ * 問いの画面では、その問いの資料があることを印で知らせる
+ */
+export function docsButton({ count, onClick, fresh = false }) {
+  if (!count) return null;
+  return el("button", {
+    class: "docs-fab" + (fresh ? " fresh" : ""),
+    onclick: (e) => { e.stopPropagation(); onClick(); },
+    "aria-label": `資料（${count}件）${fresh ? "。この問いの資料があります" : ""}`,
+  }, [clipIcon(), el("span", { class: "label" }, "資料"), el("span", { class: "count", "aria-hidden": "true" }, String(count))]);
 }
 
 export function turnThePage() {

@@ -178,8 +178,10 @@ export class CaseSession {
   }
 
   #rememberDocs(scene) {
+    // 本文の次がそのまま分岐なら、問いは本文と同じ画面に出るので、その分岐の資料もここで手に入る
+    const next = scene.type === "text" && typeof scene.next === "string" ? this.#def.scenes[scene.next] : null;
     const ids = scene.type === "choice" ? scene.docs || []
-      : scene.type === "text" ? this.paragraphs(scene).filter((p) => p.doc).map((p) => p.doc)
+      : scene.type === "text" ? [...this.paragraphs(scene).filter((p) => p.doc).map((p) => p.doc), ...(next?.type === "choice" ? next.docs || [] : [])]
       : [];
     for (const d of ids) if (!this.#state.docs.includes(d)) this.#state.docs.push(d);
   }

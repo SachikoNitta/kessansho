@@ -12,16 +12,16 @@ const INDEX_COLORS = ["#F1D58E", "#BFD8B0", "#F0B9A8", "#B9CDE6", "#D9C4E3"];
 /**
  * 資料：重ねた紙の束。上の辺にインデックスシールが並び、シールを押すとその資料が一番上に来る
  */
-export function documentsSheet({ docs, renderDoc, title = "Documents", label = "資料", foot = "選択肢に戻る →", initial = 0 }) {
-  const { tabs, body } = documentsBundle({ docs, renderDoc, initial });
+export function documentsSheet({ docs, renderDoc, title = "Documents", label = "資料", foot = "選択肢に戻る →", initial = 0, marked = [] }) {
+  const { tabs, body } = documentsBundle({ docs, renderDoc, initial, marked });
   return { title, label, tabs, body, foot };
 }
 
-/** 資料の束（インデックスシールの列と、一番上の紙）。紙の中でも、分岐の画面の中でも使う */
-export function documentsBundle({ docs, renderDoc, initial = 0 }) {
+/** 資料の束（インデックスシールの列と、一番上の紙）。marked の資料（いまの問いの資料）のシールには印を付ける */
+export function documentsBundle({ docs, renderDoc, initial = 0, marked = [] }) {
   const body = el("div", { class: "sheet-body doc-paper" });
   const tabs = docs.map((doc, i) => el("button", {
-    class: "tab",
+    class: marked.includes(doc) ? "tab marked" : "tab",
     style: `--index:${INDEX_COLORS[i % INDEX_COLORS.length]}`,
     role: "tab",
     "aria-selected": "false",
@@ -31,7 +31,7 @@ export function documentsBundle({ docs, renderDoc, initial = 0 }) {
   function select(i) {
     tabs.forEach((b, j) => b.setAttribute("aria-selected", j === i ? "true" : "false"));
     // 紙が画面に出てから、選んだタブが見える位置までタブの列を送る
-    requestAnimationFrame(() => tabs[i].scrollIntoView({ block: "nearest", inline: "nearest" }));
+    requestAnimationFrame(() => tabs[i].scrollIntoView({ block: "nearest", inline: "center" }));
     body.style.setProperty("--index", INDEX_COLORS[i % INDEX_COLORS.length]);
     // 資料の出どころは、タブの下・資料の上に置く（見出しの横ではなく、選んだ資料に付ける）
     const source = docs[i].source && el("div", { class: "doc-source hand" }, docs[i].source);
