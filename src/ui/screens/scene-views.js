@@ -44,7 +44,7 @@ function textView({ session, actions }) {
     onclick: () => {
       if (!revealed && performance.now() - shownAt < revealMs) {
         revealed = true;
-        tapArea.querySelectorAll(".reveal, .inference, .ticker-line, .ticker-dot").forEach((n) => {
+        tapArea.querySelectorAll(".reveal, .inference, .ticker-line, .ticker-dot, .graph-line, .graph-dot, .bar, .hbar").forEach((n) => {
           n.style.animationDelay = "0s";
           n.style.animationDuration = "0.01s";
         });

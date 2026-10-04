@@ -2,6 +2,7 @@
 
 import { el, svg } from "./dom.js";
 import { stockChart } from "./stock-chart.js";
+import { graph } from "./charts.js";
 
 const NAVY = "#2F3E5C";
 const RED = "#8C3B2A";
@@ -68,6 +69,7 @@ export function turnThePage() {
  */
 export function paragraph(p, i, ctx = {}) {
   if (p.chart) return stockChart(p.chart, i * 0.35);
+  if (p.graph) return graph(p.graph, i * 0.35);
   if (p.doc && ctx.renderDoc) {
     const { doc, nodes } = ctx.renderDoc(p.doc);
     return el("figure", { class: `embed embed-${doc.type} reveal`, style: `animation-delay:${i * 0.35}s` }, nodes);

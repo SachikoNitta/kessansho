@@ -3,6 +3,7 @@
 
 import { el } from "./dom.js";
 import { illustration } from "./illustrations.js";
+import { graph as drawGraph } from "./charts.js";
 
 const isNumeric = (s) => /^[−\-]?[\d.,]+(%|万|億)?$/.test(String(s));
 
@@ -65,10 +66,15 @@ function photo(doc) {
   ])];
 }
 
+/** グラフの資料（答えに関わらない数字だけをグラフにする） */
+function graph(doc) {
+  return [doc.caption && el("div", { class: "caption" }, doc.caption), drawGraph(doc.graph)].filter(Boolean);
+}
+
 /** @returns {Object<string, (doc: object, ctx: { inference: (id: string) => string|null }) => Node[]>} */
 export function createDocRenderers(extra = {}) {
-  return { table, article, inferences, site, photo, ...extra };
+  return { table, article, inferences, site, photo, graph, ...extra };
 }
 
 /** 標準で表示できる資料の種類（ケースの検証に使う） */
-export const DOC_TYPES = ["table", "article", "inferences", "site", "photo"];
+export const DOC_TYPES = ["table", "article", "inferences", "site", "photo", "graph"];
