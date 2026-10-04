@@ -83,7 +83,10 @@ button { font: inherit; color: inherit; }
   align-items: center;
 }
 
-.chapter { display: flex; align-items: baseline; gap: 10px; }
+.header { gap: 12px; }
+.chapter { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; min-width: 0; }
+.chapter .it, .chapter .title, .header-links .link { white-space: nowrap; }
+.header-links { flex: none; }
 .chapter .it { font-size: 22px; color: var(--navy); font-weight: 400; }
 .chapter .title { font-size: 15px; letter-spacing: 0.2em; }
 
@@ -238,7 +241,54 @@ button { font: inherit; color: inherit; }
 .q-line .it { font-size: 40px; line-height: 1; color: var(--red); font-weight: 400; }
 .q-line .text { font-size: 18px; font-weight: 700; line-height: 1.6; }
 
-.docs-link { align-self: flex-start; margin: 14px 0 18px 4px; font-size: 15px; }
+/* 資料を見る：机に置いた紙片のような、押せる札 */
+.docs-btn {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  align-self: stretch;
+  margin: 16px 0 18px;
+  min-height: 52px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border: 1.5px solid var(--navy);
+  box-shadow: 3px 3px 0 var(--navy);
+  transform: rotate(-0.6deg);
+  font-family: var(--hand);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--navy);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.docs-btn svg { width: 20px; height: 20px; }
+.docs-btn .label { flex: 1; }
+.docs-btn:active { transform: rotate(-0.6deg) translate(2px, 2px); box-shadow: 1px 1px 0 var(--navy); }
+.docs-btn:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+
+.count {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1.5px solid var(--red);
+  color: var(--red);
+  font-family: var(--italic);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-links { display: flex; align-items: center; gap: 18px; }
+.header-links .count { min-width: 20px; height: 20px; font-size: 13px; margin-left: 2px; }
+
+.doc-title { font-weight: 700; font-size: 16px; padding-top: 4px; }
 
 .option {
   all: unset;
@@ -263,7 +313,14 @@ button { font: inherit; color: inherit; }
 
 /* ---------- 結果 ---------- */
 
-.picked { font-family: var(--hand); font-size: 15px; color: var(--navy); display: flex; gap: 8px; line-height: 1.6; }
+.picked-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.picked { font-family: var(--hand); font-size: 15px; color: var(--navy); display: flex; gap: 8px; line-height: 1.6; min-width: 0; }
+
+/* 赤ペンの採点印 */
+.verdict { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--red); transform: rotate(-6deg); animation: stamp 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.verdict .label { font-family: var(--hand); font-weight: 600; font-size: 13px; }
+.verdict-o svg { width: 48px; height: 48px; }
+@keyframes stamp { from { opacity: 0; transform: rotate(-6deg) scale(1.6); } to { opacity: 1; transform: rotate(-6deg) scale(1); } }
 
 .inference {
   margin: 8px 10px 0;

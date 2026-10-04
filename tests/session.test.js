@@ -11,7 +11,7 @@ function sampleCase() {
   const { pages, choice, route, end, build } = createCaseBuilder();
   pages("s1", "c", [["a"]], "q1");
   choice("q1", "c", {
-    recap: "r", prompt: "p", next: "s2",
+    recap: "r", prompt: "p", next: "s2", docs: ["d1"],
     options: [
       { label: "外れ", judge: "x", text: ["違う"] },
       { label: "正解", judge: "o", gain: "A", text: ["そう"] },
@@ -19,7 +19,7 @@ function sampleCase() {
   });
   pages("s2", "c", [["b", { text: "秘密", ifFlag: "ally" }]], "q2");
   choice("q2", "c", {
-    recap: "r", prompt: "p", retry: false, next: "final",
+    recap: "r", prompt: "p", retry: false, next: "final", docs: ["d2", "d1"],
     options: [
       { label: "推論Aが要る", judge: "o", requires: "A", flags: ["ally"] },
       { label: "罠", judge: "x", flags: ["trap"] },
@@ -92,4 +92,34 @@ test("条件評価器は未知の条件を拒み、種類を足せる", () => {
   const extended = createConditionEvaluator({ always: () => true });
   assert.equal(extended.evaluate({ always: true }, { flags: [], inferences: [], confidence: 0 }), true);
   assert.deepEqual(conditions.unknownKinds({ any: [{ flag: "a" }, { nope: 1 }] }), ["nope"]);
+});
+
+test("分岐で出てきた資料を覚え、古い snapshot にも対応する", () => {
+  const def = sampleCase();
+  const s = new CaseSession(def, { conditions });
+  assert.deepEqual(s.seenDocs, []);
+  s.advance();
+  assert.deepEqual(s.seenDocs, ["d1"]);
+  s.choose(1);
+  s.advance();
+  s.advance();
+  assert.deepEqual(s.seenDocs, ["d1", "d2"]);
+  const old = { ...CaseSession.initialState(def), scene: "q2" };
+  delete old.docs;
+  assert.deepEqual(new CaseSession(def, { conditions, snapshot: old }).seenDocs, ["d2", "d1"]);
+});
+
+test("選んだ答えの判定を返し、採点しない分岐では null", () => {
+  const def = sampleCase();
+  const s = new CaseSession(def, { conditions });
+  s.advance();
+  s.choose(0);
+  assert.equal(s.lastJudge, "x");
+  s.advance();
+  s.choose(1);
+  assert.equal(s.lastJudge, "o");
+  const ungraded = { ...def, scenes: { ...def.scenes, q2: { ...def.scenes.q2, graded: false } } };
+  const u = new CaseSession(ungraded, { conditions, snapshot: { ...CaseSession.initialState(def), scene: "q2", inferences: ["A"] } });
+  u.choose(0);
+  assert.equal(u.lastJudge, null);
 });

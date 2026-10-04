@@ -110,7 +110,7 @@ cases/
 書き方（`src/authoring/case-builder.js`）：
 
 - `pages(id, chapter, [[段落…], [段落…]], next)` … 本文。1つの配列が1画面。段落は文字列か `{ text, muted, emphasis, ifFlag }`
-- `choice(id, chapter, { recap, prompt, docs, retry, next, options })` … 分岐。選択肢は `judge`（`o`/`tri`/`x`）、`text`（選んだ後の本文）、`gain`（推論）、`delta`（確度）、`flags`、`requires`（必要な推論）を持てる。`retry` の分岐で外すと理由を読んで分岐に戻り、その選択肢は消し線になる
+- `choice(id, chapter, { recap, prompt, docs, retry, graded, next, options })` … 分岐。`docs` には選択肢に出てくる資料をすべて入れる（出てきた資料は画面上部の「資料」からいつでも見返せる）。`graded: false` は正解のない分岐で、○△× の印を出さない。選択肢は `judge`（`o`/`tri`/`x`）、`text`（選んだ後の本文）、`gain`（推論）、`delta`（確度）、`flags`、`requires`（必要な推論）を持てる。`retry` の分岐で外すと理由を読んで分岐に戻り、その選択肢は消し線になる
 - `route(id, chapter, [{ if, go }])` … 結末の判定。上から評価し、最後は無条件
 - `end(id, chapter)` … ケースの終わり
 - 資料は `docs` に `table` / `article` / `inferences` の形で書く

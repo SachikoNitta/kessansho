@@ -8,7 +8,7 @@
 
 import { coverScreen } from "./screens/cover.js";
 import { casesScreen } from "./screens/cases.js";
-import { documentsSheet, notebookSheet, recordsSheet, settingsSheet } from "./sheets.js";
+import { archiveSheet, documentsSheet, notebookSheet, recordsSheet, settingsSheet } from "./sheets.js";
 
 export class App {
   #deps;
@@ -74,6 +74,7 @@ export class App {
       next: () => this.#commit(this.#session.advance()),
       choose: (index) => this.#commit(this.#session.choose(index)),
       openDocs: (ids) => this.#openDocs(ids),
+      openArchive: () => this.#openArchive(),
       openMenu: () => this.#openNotebook(),
       exitCase: () => {
         this.#deps.progress.clearSnapshot(this.#session.definition.id);
@@ -98,18 +99,25 @@ export class App {
 
   // ---------- 紙 ----------
 
-  #openDocs(ids) {
+  #renderDoc() {
     const session = this.#session;
     const { docRenderers } = this.#deps;
     const ctx = { inference: (id) => (session.hasInference(id) ? session.definition.inferences[id] : null) };
-    this.#sheet.open(documentsSheet({
-      docs: ids.map((id) => session.definition.docs[id]),
-      renderDoc: (doc) => {
-        const render = docRenderers[doc.type];
-        if (!render) throw new Error(`資料の種類 "${doc.type}" の表示がありません`);
-        return render(doc, ctx);
-      },
-    }));
+    return (doc) => {
+      const render = docRenderers[doc.type];
+      if (!render) throw new Error(`資料の種類 "${doc.type}" の表示がありません`);
+      return render(doc, ctx);
+    };
+  }
+
+  #openDocs(ids) {
+    const docs = this.#session.definition.docs;
+    this.#sheet.open(documentsSheet({ docs: ids.map((id) => docs[id]), renderDoc: this.#renderDoc() }));
+  }
+
+  #openArchive() {
+    const docs = this.#session.definition.docs;
+    this.#sheet.open(archiveSheet({ docs: this.#session.seenDocs.map((id) => docs[id]), renderDoc: this.#renderDoc() }));
   }
 
   #openNotebook() {

@@ -1,14 +1,18 @@
 // シーンの種類ごとの画面。種類は登録制で、新しい種類は createSceneViews に足すだけ（App は変えない）。
 // view は ({ session, actions }) => Node。actions は App が渡す：
-//   next()  choose(index)  openDocs(docIds)  openMenu()  exitCase()
+//   next()  choose(index)  openDocs(docIds)  openArchive()  openMenu()  exitCase()
 
 import { el } from "../dom.js";
-import { wave, scribble, clipIcon, chapterHeader, turnThePage, paragraph } from "../decorations.js";
+import { wave, scribble, clipIcon, chapterHeader, turnThePage, paragraph, verdictMark } from "../decorations.js";
 
 const NUMERALS = ["i.", "ii.", "iii.", "iv.", "v.", "vi."];
 
-function chapterOf(session) {
-  return session.definition.chapters[session.scene.chapter];
+function header(session, actions) {
+  return chapterHeader(session.definition.chapters[session.scene.chapter], {
+    onMenu: actions.openMenu,
+    onArchive: actions.openArchive,
+    archiveCount: session.seenDocs.length,
+  });
 }
 
 // ---------- 読む ----------
@@ -19,7 +23,10 @@ function textView({ session, actions }) {
   const parts = [];
 
   if (session.showsChoiceBubble()) {
-    parts.push(el("div", { class: "picked" }, [el("span", {}, "→"), el("span", {}, session.lastChoice)]));
+    parts.push(el("div", { class: "picked-row" }, [
+      el("div", { class: "picked" }, [el("span", {}, "→"), el("span", {}, session.lastChoice)]),
+      verdictMark(session.lastJudge),
+    ]));
   }
   parts.push(el("div", { class: "prose" }, paragraphs.map(paragraph)));
   if (scene.gain) {
@@ -51,7 +58,7 @@ function textView({ session, actions }) {
   }, parts);
 
   return el("section", { class: "screen" }, [
-    chapterHeader(chapterOf(session), actions.openMenu),
+    header(session, actions),
     wave(),
     tapArea,
     turnThePage(),
@@ -71,15 +78,16 @@ function choiceView({ session, actions }) {
   }, [el("span", { class: "num" }, NUMERALS[n] || ""), el("span", { class: "label" }, option.label)]));
 
   return el("section", { class: "screen" }, [
-    chapterHeader(chapterOf(session), actions.openMenu),
+    header(session, actions),
     wave(),
     el("p", { class: "recap" }, scene.recap),
     el("div", { style: "flex:1;min-height:32px" }),
     el("div", { class: "question" }, [
       el("div", { class: "q-line" }, [el("span", { class: "it" }, "Q."), el("span", { class: "text" }, scene.prompt)]),
-      docs.length > 0 && el("button", { class: "link underline docs-link", onclick: () => actions.openDocs(docs) }, [
+      docs.length > 0 && el("button", { class: "docs-btn", onclick: () => actions.openDocs(docs), "aria-label": `資料を見る（${docs.length}件）` }, [
         clipIcon(),
-        `資料を見る（${docs.length}件）`,
+        el("span", { class: "label" }, "資料を見る"),
+        el("span", { class: "count", "aria-hidden": "true" }, String(docs.length)),
       ]),
       el("div", {}, options),
     ]),
@@ -93,7 +101,7 @@ function endView({ session, actions }) {
   const total = Object.keys(def.inferences).length;
 
   return el("section", { class: "screen" }, [
-    chapterHeader(chapterOf(session), actions.openMenu),
+    header(session, actions),
     wave(),
     el("div", { class: "end-body" }, [
       el("div", { class: "end-title" }, [

@@ -17,8 +17,9 @@ export class CaseSession {
     this.#def = definition;
     this.#conditions = conditions;
     this.#state = snapshot && definition.scenes[snapshot.scene]
-      ? clone(snapshot)
+      ? { ...CaseSession.initialState(definition), ...clone(snapshot) }
       : CaseSession.initialState(definition);
+    this.#rememberDocs(this.scene);
   }
 
   static initialState(def) {
@@ -27,8 +28,10 @@ export class CaseSession {
       confidence: def.startConfidence ?? 0,
       flags: [],
       inferences: [],
+      docs: [],
       tried: {},
       lastChoice: null,
+      lastJudge: null,
       bubble: false,
       ending: null,
     };
@@ -41,8 +44,12 @@ export class CaseSession {
   get scene() { return this.#def.scenes[this.#state.scene]; }
   get confidence() { return this.#state.confidence; }
   get inferences() { return [...this.#state.inferences]; }
+  /** これまでの分岐で出てきた資料（出てきた順） */
+  get seenDocs() { return [...this.#state.docs]; }
   get ending() { return this.#state.ending; }
   get lastChoice() { return this.#state.lastChoice; }
+  /** 直前の選択の判定（"o" | "tri" | "x"）。正解のない分岐では null */
+  get lastJudge() { return this.#state.lastJudge; }
 
   hasFlag(name) { return this.#state.flags.includes(name); }
   hasInference(id) { return this.#state.inferences.includes(id); }
@@ -85,6 +92,7 @@ export class CaseSession {
     const { option } = entry;
     const s = this.#state;
     s.lastChoice = option.label;
+    s.lastJudge = scene.graded === false ? null : option.judge;
     s.bubble = !!option.bubble;
     s.confidence += option.delta || 0;
     for (const f of option.flags || []) if (!s.flags.includes(f)) s.flags.push(f);
@@ -125,7 +133,13 @@ export class CaseSession {
       events.push({ type: "ending", id });
     }
     s.scene = id;
+    this.#rememberDocs(scene);
     return events;
+  }
+
+  #rememberDocs(scene) {
+    if (scene.type !== "choice") return;
+    for (const d of scene.docs || []) if (!this.#state.docs.includes(d)) this.#state.docs.push(d);
   }
 
   #route(scene) {

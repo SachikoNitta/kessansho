@@ -1,7 +1,8 @@
 // ケースを書くための道具。ケースのファイルはこれだけに依存し、出力は CaseDefinition（純粋なデータ）。
 //
 //   pages(id, chapter, [[段落…], [段落…]], next)   本文。1つの配列が1画面。2画面目以降の id は `${id}_2`…
-//   choice(id, chapter, { recap, prompt, docs, retry, next, options })
+//   choice(id, chapter, { recap, prompt, docs, retry, graded, next, options })
+//     graded: false … 正解のない分岐（物語上の決断）。選んだ後に ○△× の印を出さない
 //     option = { label, judge: "o"|"tri"|"x", text?, gain?, delta?, flags?, requires?, next? }
 //       delta 省略時：retry の分岐は o +1 / tri 0 / x −1、retry: false の分岐は 0
 //       retry の分岐で o 以外を選ぶと、text を読んで分岐に戻る
@@ -33,7 +34,7 @@ export function createCaseBuilder() {
 
   function choice(id, chapter, def) {
     const retry = def.retry !== false;
-    const scene = { type: "choice", chapter, recap: def.recap, prompt: def.prompt, docs: def.docs || [], retry, options: [] };
+    const scene = { type: "choice", chapter, recap: def.recap, prompt: def.prompt, docs: def.docs || [], retry, graded: def.graded !== false, options: [] };
     add(id, scene);
     def.options.forEach((opt, i) => {
       const delta = opt.delta != null ? opt.delta : retry ? DEFAULT_DELTA[opt.judge] : 0;

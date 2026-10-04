@@ -31,6 +31,34 @@ export function documentsSheet({ docs, renderDoc }) {
   };
 }
 
+/** 資料の綴り：これまでに出てきた資料の一覧から、選んだものを開く */
+export function archiveSheet({ docs, renderDoc }) {
+  const body = el("div", { class: "sheet-body" });
+  const sub = el("span", { class: "hand" }, `${docs.length}件`);
+
+  function showList() {
+    sub.textContent = `${docs.length}件`;
+    body.replaceChildren(el("div", { class: "menu-list" }, docs.map((doc, i) => el("button", {
+      class: "menu-item",
+      onclick: () => showDoc(i),
+    }, [el("span", {}, doc.label), el("span", { class: "dots" }), el("span", { class: "hand" }, doc.source || "")]))));
+    body.scrollTop = 0;
+  }
+
+  function showDoc(i) {
+    sub.textContent = docs[i].source || "";
+    body.replaceChildren(
+      el("button", { class: "link", onclick: showList }, "← 資料の一覧"),
+      el("div", { class: "doc-title" }, docs[i].label),
+      ...renderDoc(docs[i]),
+    );
+    body.scrollTop = 0;
+  }
+
+  showList();
+  return { title: "Case File", label: "資料の綴り", sub, body };
+}
+
 function noteList(caption, entries) {
   return el("div", { class: "notebook" }, [
     el("div", { class: "caption" }, caption),

@@ -23,6 +23,23 @@ export function scribble() {
   ]);
 }
 
+/** 赤ペンの採点印：○ 正解 / △ 惜しい / × ちがう */
+const VERDICTS = {
+  o: { label: "正解", paths: ["M 24 6 C 37 5, 43 16, 42 25 C 41 36, 31 43, 22 42 C 11 41, 5 32, 6 22 C 7 12, 15 6, 27 7"] },
+  tri: { label: "惜しい", paths: ["M 24 6 L 43 40 L 5 40 Z"] },
+  x: { label: "ちがう", paths: ["M 9 9 L 39 39", "M 39 8 L 10 40"] },
+};
+
+export function verdictMark(judge) {
+  const v = VERDICTS[judge];
+  if (!v) return null;
+  return el("div", { class: `verdict verdict-${judge}` }, [
+    svg("svg", { width: "40", height: "40", viewBox: "0 0 48 48", "aria-hidden": "true" },
+      v.paths.map((d) => svg("path", { d, fill: "none", stroke: RED, "stroke-width": "3.2", "stroke-linecap": "round", "stroke-linejoin": "round" }))),
+    el("span", { class: "label" }, v.label),
+  ]);
+}
+
 /** 資料を見るボタンのクリップ */
 export function clipIcon() {
   return svg("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", stroke: NAVY, "stroke-width": "1.3", "stroke-linecap": "round", "aria-hidden": "true" }, [
@@ -37,14 +54,19 @@ export function paperClip() {
   ]);
 }
 
-/** 「Chapter 1 違和感 ……… 目次」のヘッダー */
-export function chapterHeader(chapter, onMenu) {
+/** 「Chapter 1 違和感 ……… 資料 目次」のヘッダー。資料は一度でも出てきたら、いつでも開ける */
+export function chapterHeader(chapter, { onMenu, onArchive, archiveCount = 0 }) {
   return el("header", { class: "header" }, [
     el("div", { class: "chapter" }, [
       el("span", { class: "it" }, chapter?.label || ""),
       el("span", { class: "title" }, chapter?.title || ""),
     ]),
-    el("button", { class: "link", onclick: onMenu }, "目次"),
+    el("div", { class: "header-links" }, [
+      archiveCount > 0 && el("button", { class: "link", onclick: onArchive, "aria-label": `資料（${archiveCount}件）` }, [
+        clipIcon(), "資料", el("span", { class: "count", "aria-hidden": "true" }, String(archiveCount)),
+      ]),
+      el("button", { class: "link", onclick: onMenu }, "目次"),
+    ]),
   ]);
 }
 
