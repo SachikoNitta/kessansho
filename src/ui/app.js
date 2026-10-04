@@ -8,7 +8,7 @@
 
 import { coverScreen } from "./screens/cover.js";
 import { casesScreen } from "./screens/cases.js";
-import { documentsSheet, notebookSheet, recordsSheet, settingsSheet } from "./sheets.js";
+import { documentsSheet, documentsBundle, notebookSheet, recordsSheet, settingsSheet } from "./sheets.js";
 
 export class App {
   #deps;
@@ -73,7 +73,14 @@ export class App {
       caseLabel: `Case ${this.#summary.no.replace(/^No\./, "")}`,
       next: () => this.#commit(this.#session.advance()),
       choose: (index) => this.#commit(this.#session.choose(index)),
+      // 本文と同じ画面に出した分岐で選ぶ：本文を読み終えてから、その分岐で選ぶ
+      chooseAhead: (index) => this.#commit([...this.#session.advance(), ...this.#session.choose(index)]),
       openDocs: (ids) => this.#openDocs(ids),
+      docsLayout: this.#deps.preferences.docsLayout,
+      docsBundle: (ids) => {
+        const docs = this.#session.definition.docs;
+        return documentsBundle({ docs: ids.map((id) => docs[id]), renderDoc: this.#renderDoc() });
+      },
       openArchive: () => this.#openArchive(),
       renderDoc: (id) => {
         const doc = this.#session.definition.docs[id];
@@ -160,6 +167,8 @@ export class App {
     const { preferences, progress } = this.#deps;
     this.#sheet.open(settingsSheet({
       largeText: preferences.largeText,
+      docsLayout: preferences.docsLayout,
+      onCycleDocsLayout: () => preferences.cycleDocsLayout(),
       onToggleLargeText: () => {
         const on = preferences.toggleLargeText();
         this.#applyPreferences();

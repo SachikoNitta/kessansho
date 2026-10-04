@@ -127,6 +127,23 @@ test("値がつかなかった日の段落は、JSON にできる気配値と板
   assert.throws(() => limitQuote({ name: "N", close: 4800, limit: 4800, sell: 1, buy: 1 }));
 });
 
+test("本文の次がそのまま分岐なら、その分岐を先に見て、まとめて選べる", () => {
+  const { pages, choice, end, build } = createCaseBuilder();
+  pages("a", "c", [["前置き"], ["問いの前の一文"]], "q");
+  choice("q", "c", { recap: "問いの前の一文", prompt: "どれ？", next: "fin", options: [{ label: "x", judge: "x", text: ["違う"] }, { label: "o", judge: "o" }] });
+  end("fin", "c");
+  const def = build({ id: "t", start: "a", chapters: { c: { label: "c" } }, inferences: {} });
+  const s = new CaseSession(def, { conditions });
+  assert.equal(s.nextChoiceId(), null, "1画面目の次は本文");
+  s.advance();
+  assert.equal(s.nextChoiceId(), "q");
+  assert.deepEqual(s.options("q").map((o) => o.option.label), ["x", "o"]);
+  s.advance();
+  s.choose(0);
+  assert.equal(s.nextChoiceId(), "q", "外した答えの本文からも、同じ分岐に戻る");
+  assert.equal(s.options("q")[0].used, true);
+});
+
 test("本文に差し込んだ資料も、出てきた資料として覚える", () => {
   const { pages, end, build } = createCaseBuilder();
   pages("a", "c", [["x"], ["y", { doc: "site" }, { doc: "secret", ifFlag: "f" }]], "fin");

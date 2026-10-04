@@ -13,6 +13,12 @@ const INDEX_COLORS = ["#F1D58E", "#BFD8B0", "#F0B9A8", "#B9CDE6", "#D9C4E3"];
  * 資料：重ねた紙の束。上の辺にインデックスシールが並び、シールを押すとその資料が一番上に来る
  */
 export function documentsSheet({ docs, renderDoc, title = "Documents", label = "資料", foot = "選択肢に戻る →", initial = 0 }) {
+  const { tabs, body } = documentsBundle({ docs, renderDoc, initial });
+  return { title, label, tabs, body, foot };
+}
+
+/** 資料の束（インデックスシールの列と、一番上の紙）。紙の中でも、分岐の画面の中でも使う */
+export function documentsBundle({ docs, renderDoc, initial = 0 }) {
   const body = el("div", { class: "sheet-body doc-paper" });
   const tabs = docs.map((doc, i) => el("button", {
     class: "tab",
@@ -35,7 +41,7 @@ export function documentsSheet({ docs, renderDoc, title = "Documents", label = "
   const tablist = el("div", { class: "tabs index-tabs", role: "tablist" }, tabs);
   select(Math.min(initial, docs.length - 1));
 
-  return { title, label, tabs: tablist, body, foot };
+  return { tabs: tablist, body };
 }
 
 function noteList(caption, entries) {
@@ -122,8 +128,11 @@ export function recordsSheet({ entries }) {
 }
 
 /** 設定 */
-export function settingsSheet({ largeText, onToggleLargeText, onClearAll }) {
+const LAYOUT_NAMES = { split: "上下に分ける", half: "半分のシート", sheet: "全画面の紙" };
+
+export function settingsSheet({ largeText, onToggleLargeText, docsLayout, onCycleDocsLayout, onClearAll }) {
   const sizeValue = el("span", { class: "hand" }, largeText ? "大きめ" : "標準");
+  const layoutValue = el("span", { class: "hand" }, LAYOUT_NAMES[docsLayout]);
   const clearValue = el("span", { class: "hand" }, "セーブと記録");
   let armed = false;
   return {
@@ -136,6 +145,10 @@ export function settingsSheet({ largeText, onToggleLargeText, onClearAll }) {
           class: "menu-item",
           onclick: () => { sizeValue.textContent = onToggleLargeText() ? "大きめ" : "標準"; },
         }, [el("span", {}, "文字の大きさ"), el("span", { class: "dots" }), sizeValue]),
+        el("button", {
+          class: "menu-item",
+          onclick: () => { layoutValue.textContent = LAYOUT_NAMES[onCycleDocsLayout()]; },
+        }, [el("span", {}, "分岐での資料"), el("span", { class: "dots" }), layoutValue]),
         el("button", {
           class: "menu-item",
           onclick: () => {

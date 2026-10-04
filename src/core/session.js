@@ -65,13 +65,24 @@ export class CaseSession {
     return !!this.#state.lastChoice && (!!this.scene.showChoice || this.#state.bubble);
   }
 
-  /** いま選べる選択肢。必要な推論がないものは出さず、外して戻ってきたものは used */
-  options() {
-    const scene = this.#expect("choice");
-    const tried = this.#state.tried[this.sceneId] || [];
+  /**
+   * いま選べる選択肢。必要な推論がないものは出さず、外して戻ってきたものは used。
+   * id を渡すと、その分岐の選択肢（本文の次の分岐を同じ画面に出すとき）
+   */
+  options(id = this.sceneId) {
+    const scene = this.#def.scenes[id];
+    if (scene?.type !== "choice") throw new Error(`"${id}" は分岐ではありません`);
+    const tried = this.#state.tried[id] || [];
     return scene.options
       .map((option, index) => ({ option, index, used: tried.includes(index) }))
       .filter(({ option }) => !option.requires || this.hasInference(option.requires));
+  }
+
+  /** 本文の次がそのまま分岐なら、その分岐の id（本文と問いを同じ画面に出すため）。でなければ null */
+  nextChoiceId() {
+    const scene = this.scene;
+    if (scene.type !== "text" || typeof scene.next !== "string") return null;
+    return this.#def.scenes[scene.next]?.type === "choice" ? scene.next : null;
   }
 
   // ---------- 操作 ----------
