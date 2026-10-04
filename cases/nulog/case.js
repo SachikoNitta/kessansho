@@ -224,7 +224,26 @@ choice("q2_2", "c2", {
       label: "代理店の監査役と、最大の販売先の代表が同じ人物", judge: "o", gain: "C",
       text: [
         "久世。広告費を受け取る会社の監査役であり、売上を払う会社の代表でもある男。",
-        "金は、一人の人間の手の中を回っている。",
+        { diagram: {
+          kind: "network", title: "登記でわかったつながり", height: 250,
+          nodes: [
+            { id: "nulog", label: "Nulog", sub: "自社", x: 160, y: 24 },
+            { id: "harmo", label: "ハルモ", sub: "販売先・41%", x: 54, y: 104 },
+            { id: "nocto", label: "ノクトリンク", sub: "販売先・23%", x: 54, y: 188 },
+            { id: "astra", label: "アストラ・アド", sub: "広告代理店", x: 262, y: 104 },
+            { id: "toho", label: "東邦ビジネス販売", sub: "販売先・12%・大阪", x: 250, y: 214, faded: true },
+            { id: "kuze", label: "久世", x: 158, y: 150, person: true },
+          ],
+          links: [
+            { from: "nulog", to: "astra", label: "広告費", money: true },
+            { from: "harmo", to: "nulog", label: "売上代金", money: true },
+            { from: "kuze", to: "harmo", label: "代表" },
+            { from: "kuze", to: "astra", label: "監査役" },
+          ],
+          groups: [{ nodes: ["harmo", "nocto"], label: "同じビルの7階" }],
+          note: "東邦ビジネス販売には、どの会社とも人のつながりがない",
+        } },
+        "広告費を受け取る側と、売上を払う側の両方に、同じ人間が座っている。",
       ],
     },
     { label: "販売パートナー3社と代理店は、すべてつながっている", judge: "x", text: ["大阪の一社には、どこにも接点がない。全部を疑うのは、何も見ていないのと同じだ。"] },

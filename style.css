@@ -478,6 +478,12 @@ button { font: inherit; color: inherit; }
 .dia-arrow { fill: none; stroke: var(--red); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen 0.5s ease forwards; }
 .dia-arrow.dashed { stroke-dasharray: 5 5; stroke-dashoffset: 0; opacity: 0; animation: dot 0.4s ease forwards; }
 .dia-head { fill: var(--red); }
+.dia-tie { fill: none; stroke: var(--navy); stroke-width: 1.6; stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen 0.5s ease forwards; }
+.dia-label.tie { fill: var(--navy); }
+.dia-node.person circle { fill: #F4E3B5; stroke: var(--navy); stroke-width: 1.4; }
+.dia-node.faded { opacity: 0.45; }
+.dia-group rect { fill: rgba(47, 62, 92, 0.05); stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+.dia-group text { font-size: 10px; fill: var(--muted); }
 .dia-label { font-size: 12px; fill: var(--red); font-weight: 700; opacity: 0; animation: dot 0.3s ease forwards; }
 .dia-label.dashed { fill: var(--muted); }
 .dia-coin { opacity: 0; animation: dot 0.4s ease forwards; }
@@ -740,7 +746,7 @@ button { font: inherit; color: inherit; }
   .bar, .hbar { transform: none; }
   .graph-dot { opacity: 1; }
   .ticker-dot, .quote-tip, .dia-label, .dia-arrow.dashed { opacity: 1; }
-  .dia-arrow { stroke-dashoffset: 0; }
+  .dia-arrow, .dia-tie { stroke-dashoffset: 0; }
   .quote-drop { stroke-dashoffset: 0; }
   .quote-line { clip-path: none; }
   .board-bar { transform: none; }

@@ -1,12 +1,15 @@
-// 本文に差し込む図。いまは「お金の輪」（cycle）だけ：
-// 箱を円の上に並べ、隣どうしを矢印でつなぎ、輪の上を硬貨が回り続ける。
+// 本文に差し込む図。
 //
-// spec = {
-//   kind: "cycle",
-//   title, note?,
-//   nodes: [{ label, sub? }],              上から時計回りに並ぶ
-//   edges: [{ from, to, label, dashed? }], dashed はまだ確かめていないつながり
-// }
+// cycle（お金の輪）：箱を楕円の上に並べ、隣どうしを矢印でつなぎ、輪の上を硬貨が回り続ける。
+//   { kind: "cycle", title, note?,
+//     nodes: [{ label, sub? }],              上から時計回りに並ぶ
+//     edges: [{ from, to, label, dashed? }] } dashed はまだ確かめていないつながり
+//
+// network（人と会社のつながり）：会社は箱、人は丸。位置は 320×H の座標で指定する。
+//   { kind: "network", title, note?, height?,
+//     nodes: [{ id, label, sub?, x, y, person?, faded? }],
+//     links: [{ from, to, label?, money?, dashed? }],  money は矢印つきのお金の流れ、ほかは人の役職
+//     groups: [{ nodes: [id], label }] }              同じ場所にある会社を点線で囲む
 
 import { el, svg } from "./dom.js";
 
@@ -114,7 +117,90 @@ function cycle(spec, delay) {
   ]);
 }
 
-const KINDS = { cycle };
+/** 中心から dir の向きに進んで、箱（または丸）の縁に当たる点 */
+function edge(n, toward, pad = 4) {
+  const dx = toward.x - n.x;
+  const dy = toward.y - n.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const t = n.person ? n.r + pad : Math.min((n.w / 2 + pad) / (Math.abs(dx) || 1e-6), (BOX_H / 2 + pad) / (Math.abs(dy) || 1e-6)) * len;
+  return { x: n.x + (dx / len) * t, y: n.y + (dy / len) * t };
+}
+
+function network(spec, delay) {
+  const id = `dia${++uid}`;
+  const height = spec.height || 240;
+  const nodes = Object.fromEntries(spec.nodes.map((n) => [n.id, { ...n, w: boxWidth(n), r: 24 }]));
+
+  const groups = (spec.groups || []).map((g) => {
+    const members = g.nodes.map((k) => nodes[k]);
+    const x0 = Math.min(...members.map((m) => m.x - m.w / 2)) - 8;
+    const x1 = Math.max(...members.map((m) => m.x + m.w / 2)) + 8;
+    const y0 = Math.min(...members.map((m) => m.y - BOX_H / 2)) - 18;
+    const y1 = Math.max(...members.map((m) => m.y + BOX_H / 2)) + 8;
+    return svg("g", { class: "dia-group" }, [
+      svg("rect", { x: x0, y: y0, width: x1 - x0, height: y1 - y0, rx: 8 }),
+      svg("text", { x: x0 + 8, y: y0 + 12 }, g.label),
+    ]);
+  });
+
+  const links = spec.links.map((l, k) => {
+    const a = nodes[l.from];
+    const b = nodes[l.to];
+    const p0 = edge(a, b);
+    const p1 = edge(b, a, l.money ? 6 : 4);
+    const mx = (p0.x + p1.x) / 2;
+    const my = (p0.y + p1.y) / 2;
+    // ラベルは線の少し上（線に垂直な向き）にずらす
+    const nx = -(p1.y - p0.y);
+    const ny = p1.x - p0.x;
+    const nl = Math.hypot(nx, ny) || 1;
+    const side = ny / nl > 0 ? -1 : 1;
+    const cls = l.money ? "dia-arrow" : "dia-tie";
+    return [
+      svg("path", {
+        class: `${cls}${l.dashed ? " dashed" : ""}`,
+        d: `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
+        "marker-end": l.money ? `url(#${id}-head)` : null,
+        pathLength: l.dashed ? null : "1",
+        style: `animation-delay:${delay + 0.3 + k * 0.35}s`,
+      }),
+      l.label && svg("text", {
+        class: `dia-label${l.money ? "" : " tie"}`,
+        x: (mx + side * (nx / nl) * 15).toFixed(1), y: (my + side * (ny / nl) * 15 + 4).toFixed(1),
+        "text-anchor": "middle",
+        style: `animation-delay:${delay + 0.45 + k * 0.35}s`,
+      }, l.label),
+    ];
+  });
+
+  const boxes = Object.values(nodes).map((n) => n.person
+    ? svg("g", { class: "dia-node person" }, [
+        svg("circle", { cx: n.x, cy: n.y, r: n.r }),
+        svg("text", { class: "dia-name", x: n.x, y: n.y + 5, "text-anchor": "middle" }, n.label),
+      ])
+    : svg("g", { class: `dia-node${n.faded ? " faded" : ""}` }, [
+        svg("rect", { x: n.x - n.w / 2, y: n.y - BOX_H / 2, width: n.w, height: BOX_H, rx: 6 }),
+        svg("text", { class: "dia-name", x: n.x, y: n.sub ? n.y + 1 : n.y + 5, "text-anchor": "middle" }, n.label),
+        n.sub && svg("text", { class: "dia-sub", x: n.x, y: n.y + 14, "text-anchor": "middle" }, n.sub),
+      ]));
+
+  const summary = `${spec.title}。` + spec.links.map((l) =>
+    `${nodes[l.from].label}から${nodes[l.to].label}へ${l.label ? `、${l.label}` : ""}`).join("。");
+
+  return el("figure", { class: "diagram reveal", style: `animation-delay:${delay}s`, role: "img", "aria-label": summary }, [
+    el("div", { class: "graph-head" }, el("span", { class: "graph-title" }, spec.title)),
+    svg("svg", { class: "dia-svg", viewBox: `0 0 ${W} ${height}`, "aria-hidden": "true" }, [
+      svg("defs", {}, svg("marker", { id: `${id}-head`, viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" },
+        svg("path", { class: "dia-head", d: "M 0 0 L 10 5 L 0 10 z" }))),
+      ...groups,
+      ...links.flat(),
+      ...boxes,
+    ]),
+    spec.note && el("div", { class: "graph-note" }, spec.note),
+  ]);
+}
+
+const KINDS = { cycle, network };
 
 /** @param {number} delay 表示を始めるまでの秒数 */
 export function diagram(spec, delay = 0) {
