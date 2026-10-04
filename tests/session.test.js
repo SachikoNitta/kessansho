@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createCaseBuilder } from "../src/authoring/case-builder.js";
+import { createCaseBuilder, stockChart } from "../src/authoring/case-builder.js";
 import { CaseSession } from "../src/core/session.js";
 import { createConditionEvaluator } from "../src/core/conditions.js";
 
@@ -122,4 +122,15 @@ test("選んだ答えの判定を返し、採点しない分岐では null", () 
   const u = new CaseSession(ungraded, { conditions, snapshot: { ...CaseSession.initialState(def), scene: "q2", inferences: ["A"] } });
   u.choose(0);
   assert.equal(u.lastJudge, null);
+});
+
+test("株価チャートの段落は、毎回同じ形で、前日終値と終値を必ず通る", () => {
+  const a = stockChart({ name: "N", keys: [4800, 3900, 3840], seed: 3 });
+  const b = stockChart({ name: "N", keys: [4800, 3900, 3840], seed: 3 });
+  assert.deepEqual(a, b);
+  assert.equal(a.chart.points[0], 4800);
+  assert.equal(a.chart.points.at(-1), 3840);
+  assert.deepEqual(JSON.parse(JSON.stringify(a)), a);
+  const flat = stockChart({ name: "N", keys: [4800, 4100, 4100], noise: 0 });
+  assert.ok(flat.chart.points.slice(-5).every((v) => v === 4100));
 });

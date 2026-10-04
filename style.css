@@ -288,7 +288,6 @@ button { font: inherit; color: inherit; }
 .header-links { display: flex; align-items: center; gap: 18px; }
 .header-links .count { min-width: 20px; height: 20px; font-size: 13px; margin-left: 2px; }
 
-.doc-title { font-weight: 700; font-size: 16px; padding-top: 4px; }
 
 .option {
   all: unset;
@@ -313,14 +312,72 @@ button { font: inherit; color: inherit; }
 
 /* ---------- 結果 ---------- */
 
-.picked-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.picked { font-family: var(--hand); font-size: 15px; color: var(--navy); display: flex; gap: 8px; line-height: 1.6; min-width: 0; }
+.picked { font-family: var(--hand); font-size: 15px; color: var(--navy); display: flex; gap: 8px; line-height: 1.6; padding-right: 96px; }
 
-/* 赤ペンの採点印 */
-.verdict { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--red); transform: rotate(-6deg); animation: stamp 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
-.verdict .label { font-family: var(--hand); font-weight: 600; font-size: 13px; }
-.verdict-o svg { width: 48px; height: 48px; }
-@keyframes stamp { from { opacity: 0; transform: rotate(-6deg) scale(1.6); } to { opacity: 1; transform: rotate(-6deg) scale(1); } }
+/* 本文に差し込む株価チャート */
+.ticker {
+  margin: 0;
+  padding: 12px 14px 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 2px 2px 0 rgba(46, 32, 18, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--mincho);
+  font-variant-numeric: tabular-nums;
+  --tick: var(--navy);
+}
+.ticker-up { --tick: var(--red); }
+.ticker-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.ticker-name { font-family: var(--hand); font-size: 13px; color: var(--muted); }
+.ticker-now { font-size: 26px; font-weight: 700; color: var(--tick); line-height: 1.1; }
+.ticker-now small { font-size: 13px; margin-left: 2px; }
+.ticker-chart { width: 100%; height: 92px; overflow: visible; }
+.ticker-base { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
+.ticker-line {
+  fill: none;
+  stroke: var(--tick);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: pen 1.2s cubic-bezier(0.4, 0, 0.3, 1) forwards;
+}
+.ticker-dot { fill: var(--tick); opacity: 0; animation: dot 0.3s ease forwards; }
+@keyframes dot { to { opacity: 1; } }
+.ticker-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+.ticker-chg { color: var(--tick); font-weight: 700; }
+.ticker-label { font-family: var(--hand); color: var(--muted); display: flex; gap: 8px; }
+.ticker-note { color: var(--tick); }
+
+/* 先生の赤ペン：本文の右上に大きく重ねて、書き順どおりに走らせる */
+.tap-area { position: relative; }
+.verdict {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 150px;
+  height: 150px;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  transform: rotate(-8deg);
+}
+.verdict path {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.88;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: pen 0.32s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+}
+.verdict-x { width: 130px; height: 130px; }
+@keyframes pen { to { stroke-dashoffset: 0; } }
 
 .inference {
   margin: 8px 10px 0;
@@ -384,7 +441,19 @@ button { font: inherit; color: inherit; }
 .sheet-head .it { font-size: 26px; color: var(--navy); font-weight: 400; }
 .sheet-head .hand { font-size: 13px; color: var(--muted); }
 
-.tabs { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+/* タブは1行に並べ、収まらなければ左右にスクロールする */
+.tabs {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  margin-inline: -4px;
+  padding-inline: 4px;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tabs .tab { flex: none; white-space: nowrap; scroll-snap-align: start; }
 .tab {
   all: unset;
   cursor: pointer;
@@ -452,4 +521,6 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .prose p.reveal, .inference { opacity: 1; }
+  .verdict path, .ticker-line { stroke-dashoffset: 0; }
+  .ticker-dot { opacity: 1; }
 }

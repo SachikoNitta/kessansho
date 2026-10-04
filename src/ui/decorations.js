@@ -1,6 +1,7 @@
 // 手描きの装飾（ワイヤーフレーム「曲線タイポ・アナログ版」）と、画面に共通する部品。
 
 import { el, svg } from "./dom.js";
+import { stockChart } from "./stock-chart.js";
 
 const NAVY = "#2F3E5C";
 const RED = "#8C3B2A";
@@ -23,21 +24,18 @@ export function scribble() {
   ]);
 }
 
-/** 赤ペンの採点印：○ 正解 / △ 惜しい / × ちがう */
+/** 先生の赤ペン：本文の右上に大きく、書き順どおりにシュッと書く（○ 正解 / △ 惜しい / × ちがう） */
 const VERDICTS = {
-  o: { label: "正解", paths: ["M 24 6 C 37 5, 43 16, 42 25 C 41 36, 31 43, 22 42 C 11 41, 5 32, 6 22 C 7 12, 15 6, 27 7"] },
-  tri: { label: "惜しい", paths: ["M 24 6 L 43 40 L 5 40 Z"] },
-  x: { label: "ちがう", paths: ["M 9 9 L 39 39", "M 39 8 L 10 40"] },
+  o: { label: "正解", strokes: ["M 96 14 C 144 20, 156 80, 130 118 C 104 152, 44 150, 20 112 C 0 76, 24 24, 76 16 C 92 14, 108 18, 118 28"] },
+  tri: { label: "惜しい", strokes: ["M 82 12 C 102 52, 124 94, 146 134 C 104 138, 60 137, 16 134 C 38 96, 60 56, 86 10"] },
+  x: { label: "ちがう", strokes: ["M 28 26 C 66 66, 100 102, 134 138", "M 136 24 C 100 62, 64 100, 24 140"] },
 };
 
 export function verdictMark(judge) {
   const v = VERDICTS[judge];
   if (!v) return null;
-  return el("div", { class: `verdict verdict-${judge}` }, [
-    svg("svg", { width: "40", height: "40", viewBox: "0 0 48 48", "aria-hidden": "true" },
-      v.paths.map((d) => svg("path", { d, fill: "none", stroke: RED, "stroke-width": "3.2", "stroke-linecap": "round", "stroke-linejoin": "round" }))),
-    el("span", { class: "label" }, v.label),
-  ]);
+  return svg("svg", { class: `verdict verdict-${judge}`, viewBox: "0 0 160 160", role: "img", "aria-label": v.label },
+    v.strokes.map((d, i) => svg("path", { d, pathLength: "1", style: `animation-delay:${0.15 + i * 0.22}s` })));
 }
 
 /** 資料を見るボタンのクリップ */
@@ -79,6 +77,7 @@ export function turnThePage() {
 
 /** 本文の一段落。i 番目ほど遅れて浮かび上がる */
 export function paragraph(p, i) {
+  if (p.chart) return stockChart(p.chart, i * 0.35);
   const cls = ["reveal", p.muted && "muted", p.emphasis && "emphasis"].filter(Boolean).join(" ");
   return el("p", { class: cls, style: `animation-delay:${i * 0.35}s` }, p.text);
 }

@@ -23,10 +23,8 @@ function textView({ session, actions }) {
   const parts = [];
 
   if (session.showsChoiceBubble()) {
-    parts.push(el("div", { class: "picked-row" }, [
-      el("div", { class: "picked" }, [el("span", {}, "→"), el("span", {}, session.lastChoice)]),
-      verdictMark(session.lastJudge),
-    ]));
+    parts.push(el("div", { class: "picked" }, [el("span", {}, "→"), el("span", {}, session.lastChoice)]));
+    parts.push(verdictMark(session.lastJudge));
   }
   parts.push(el("div", { class: "prose" }, paragraphs.map(paragraph)));
   if (scene.gain) {
@@ -47,10 +45,11 @@ function textView({ session, actions }) {
     onclick: () => {
       if (!revealed && performance.now() - shownAt < revealMs) {
         revealed = true;
-        tapArea.querySelectorAll(".reveal, .inference").forEach((n) => {
+        tapArea.querySelectorAll(".reveal, .inference, .ticker-line, .ticker-dot").forEach((n) => {
           n.style.animationDelay = "0s";
           n.style.animationDuration = "0.01s";
         });
+        tapArea.querySelectorAll(".ticker").forEach((n) => { n.dataset.now = "1"; });
         return;
       }
       actions.next();

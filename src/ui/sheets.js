@@ -2,8 +2,11 @@
 
 import { el } from "./dom.js";
 
-/** 資料：複数あればタブで切り替える */
-export function documentsSheet({ docs, renderDoc }) {
+/**
+ * 資料：タブを左右に並べて切り替える。問いの資料も、これまでの資料の綴りも同じ見せ方
+ * @param {{ docs: object[], renderDoc: Function, title?: string, label?: string, foot?: string, initial?: number }} props
+ */
+export function documentsSheet({ docs, renderDoc, title = "Documents", label = "資料", foot = "選択肢に戻る →", initial = 0 }) {
   const body = el("div", { class: "sheet-body" });
   const sub = el("span", { class: "hand" });
   const tabs = docs.map((doc, i) => el("button", {
@@ -15,48 +18,16 @@ export function documentsSheet({ docs, renderDoc }) {
 
   function select(i) {
     tabs.forEach((b, j) => b.setAttribute("aria-selected", j === i ? "true" : "false"));
+    // 紙が画面に出てから、選んだタブが見える位置までタブの列を送る
+    requestAnimationFrame(() => tabs[i].scrollIntoView({ block: "nearest", inline: "nearest" }));
     sub.textContent = docs[i].source || "";
     body.replaceChildren(...renderDoc(docs[i]));
     body.scrollTop = 0;
   }
-  select(0);
+  const tablist = el("div", { class: "tabs", role: "tablist" }, tabs);
+  select(Math.min(initial, docs.length - 1));
 
-  return {
-    title: "Documents",
-    label: "資料",
-    sub,
-    tabs: el("div", { class: "tabs", role: "tablist" }, tabs),
-    body,
-    foot: "選択肢に戻る →",
-  };
-}
-
-/** 資料の綴り：これまでに出てきた資料の一覧から、選んだものを開く */
-export function archiveSheet({ docs, renderDoc }) {
-  const body = el("div", { class: "sheet-body" });
-  const sub = el("span", { class: "hand" }, `${docs.length}件`);
-
-  function showList() {
-    sub.textContent = `${docs.length}件`;
-    body.replaceChildren(el("div", { class: "menu-list" }, docs.map((doc, i) => el("button", {
-      class: "menu-item",
-      onclick: () => showDoc(i),
-    }, [el("span", {}, doc.label), el("span", { class: "dots" }), el("span", { class: "hand" }, doc.source || "")]))));
-    body.scrollTop = 0;
-  }
-
-  function showDoc(i) {
-    sub.textContent = docs[i].source || "";
-    body.replaceChildren(
-      el("button", { class: "link", onclick: showList }, "← 資料の一覧"),
-      el("div", { class: "doc-title" }, docs[i].label),
-      ...renderDoc(docs[i]),
-    );
-    body.scrollTop = 0;
-  }
-
-  showList();
-  return { title: "Case File", label: "資料の綴り", sub, body };
+  return { title, label, sub, tabs: tablist, body, foot };
 }
 
 function noteList(caption, entries) {

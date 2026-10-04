@@ -8,7 +8,7 @@
 
 import { coverScreen } from "./screens/cover.js";
 import { casesScreen } from "./screens/cases.js";
-import { archiveSheet, documentsSheet, notebookSheet, recordsSheet, settingsSheet } from "./sheets.js";
+import { documentsSheet, notebookSheet, recordsSheet, settingsSheet } from "./sheets.js";
 
 export class App {
   #deps;
@@ -117,7 +117,16 @@ export class App {
 
   #openArchive() {
     const docs = this.#session.definition.docs;
-    this.#sheet.open(archiveSheet({ docs: this.#session.seenDocs.map((id) => docs[id]), renderDoc: this.#renderDoc() }));
+    const seen = this.#session.seenDocs.map((id) => docs[id]);
+    // これまでの資料の綴り：いちばん新しく出てきた資料を開いた状態で見せる
+    this.#sheet.open(documentsSheet({
+      docs: seen,
+      renderDoc: this.#renderDoc(),
+      title: "Case File",
+      label: "これまでの資料",
+      foot: "閉じる →",
+      initial: seen.length - 1,
+    }));
   }
 
   #openNotebook() {

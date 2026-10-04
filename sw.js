@@ -26,6 +26,7 @@ const ASSETS = [
   "src/ui/doc-renderers.js",
   "src/ui/sheet.js",
   "src/ui/sheets.js",
+  "src/ui/stock-chart.js",
   "src/ui/screens/cover.js",
   "src/ui/screens/cases.js",
   "src/ui/screens/scene-views.js",

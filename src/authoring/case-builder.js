@@ -10,8 +10,30 @@
 //   route(id, chapter, [{ if?: 条件, go }])       上から評価して最初に当てはまった go へ
 //   end(id, chapter)
 //   build(meta)                                 meta（id, start, chapters, inferences, endings, docs…）と合わせて完成
+//
+//   stockChart({ name, keys, label, note, noise, steps, seed })  本文に差し込む株価チャートの段落
+//     keys: 通る株価（最初が前日終値、最後が終値）。間は seed から決まる小さな揺れでつなぐ（毎回同じ形）
 
 const DEFAULT_DELTA = { o: 1, tri: 0, x: -1 };
+
+/** 本文に差し込む株価チャート。出力は JSON にできる素のデータ */
+export function stockChart({ name, keys, label = "", note = "", noise = 0.05, steps = 28, seed = 7 }) {
+  if (!Array.isArray(keys) || keys.length < 2) throw new Error("stockChart: keys は2つ以上必要です");
+  let state = seed >>> 0;
+  const rand = () => ((state = (state * 1664525 + 1013904223) >>> 0) / 2 ** 32) - 0.5;
+  const range = Math.max(...keys) - Math.min(...keys) || keys[0] * 0.05;
+  const points = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * (keys.length - 1);
+    const k = Math.min(Math.floor(t), keys.length - 2);
+    const base = keys[k] + (keys[k + 1] - keys[k]) * (t - k);
+    const edge = i === 0 || i === steps;
+    points.push(Math.round(edge ? base : base + rand() * range * noise * 2));
+  }
+  points[0] = keys[0];
+  points[steps] = keys[keys.length - 1];
+  return { chart: { name, label, note, points } };
+}
 
 export function createCaseBuilder() {
   const scenes = {};
