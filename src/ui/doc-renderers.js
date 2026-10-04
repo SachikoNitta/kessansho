@@ -54,6 +54,18 @@ function site(doc) {
   ])];
 }
 
+/** 手紙・通知書（内容証明など）：日付、宛名、表題、本文、差出人、郵便局の証明印 */
+function letter(doc) {
+  return [el("div", { class: "letter" }, [
+    doc.date && el("div", { class: "letter-date" }, doc.date),
+    el("div", { class: "letter-to" }, doc.to.map((line) => el("div", {}, line))),
+    el("div", { class: "letter-title" }, doc.title),
+    ...doc.body.map((line) => el("p", {}, line)),
+    el("div", { class: "letter-from" }, doc.from.map((line) => el("div", {}, line))),
+    doc.stamp && el("div", { class: "letter-stamp" }, doc.stamp),
+  ])];
+}
+
 /** 公開したレポートのスクリーンショット（ブラウザの枠に、見出し・要旨・結論・注記） */
 function report(doc) {
   return [el("div", { class: "site report" }, [
@@ -87,8 +99,8 @@ function graph(doc) {
 
 /** @returns {Object<string, (doc: object, ctx: { inference: (id: string) => string|null }) => Node[]>} */
 export function createDocRenderers(extra = {}) {
-  return { table, article, inferences, site, report, photo, graph, ...extra };
+  return { table, article, inferences, site, report, letter, photo, graph, ...extra };
 }
 
 /** 標準で表示できる資料の種類（ケースの検証に使う） */
-export const DOC_TYPES = ["table", "article", "inferences", "site", "report", "photo", "graph"];
+export const DOC_TYPES = ["table", "article", "inferences", "site", "report", "letter", "photo", "graph"];

@@ -352,6 +352,22 @@ button { font: inherit; color: inherit; }
 .site-lead { font-size: 12px; line-height: 1.7; color: #3B414D; }
 .site-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .site-badges span { font-size: 10px; font-weight: 700; color: #2450D8; background: #E6ECFF; border-radius: 999px; padding: 3px 9px; }
+/* 手紙・通知書 */
+.letter {
+  background: #FFFDF7; border: 1px solid var(--line); box-shadow: 2px 2px 0 rgba(46, 32, 18, 0.12);
+  padding: 16px 16px 14px; font-family: var(--mincho); font-size: 13px; line-height: 1.8; color: #2A2620;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.letter p { margin: 0; text-indent: 1em; }
+.letter p:last-of-type { text-align: right; text-indent: 0; }
+.letter-date { text-align: right; font-size: 11px; color: var(--muted); }
+.letter-to { font-size: 13px; }
+.letter-title { text-align: center; font-size: 17px; font-weight: 700; letter-spacing: 0.6em; padding: 6px 0 4px; }
+.letter-from { align-self: flex-end; text-align: right; font-size: 12px; padding-top: 4px; }
+.letter-stamp {
+  margin-top: 8px; padding: 6px 8px; font-size: 10px; line-height: 1.6; color: #8E2B1E;
+  border: 1.5px solid #8E2B1E; border-radius: 3px; transform: rotate(-1.2deg); opacity: 0.85;
+}
 .report-page { padding: 12px 16px 16px; background: #FFFFFF; color: #1F232B; display: flex; flex-direction: column; gap: 8px; }
 .report-mast { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 8px; border-bottom: 2px solid #1F232B; }
 .report-brand { font-weight: 800; font-size: 14px; letter-spacing: 0.08em; }
