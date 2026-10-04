@@ -20,6 +20,7 @@ export class CaseSession {
       ? { ...CaseSession.initialState(definition), ...clone(snapshot) }
       : CaseSession.initialState(definition);
     this.#rememberDocs(this.scene);
+    if (!this.#state.checkpoints[this.scene.chapter]) this.#saveCheckpoint(this.sceneId);
   }
 
   static initialState(def) {
@@ -29,6 +30,7 @@ export class CaseSession {
       flags: [],
       inferences: [],
       docs: [],
+      checkpoints: {},
       tried: {},
       lastChoice: null,
       bubble: false,
@@ -43,7 +45,7 @@ export class CaseSession {
   get scene() { return this.#def.scenes[this.#state.scene]; }
   get confidence() { return this.#state.confidence; }
   get inferences() { return [...this.#state.inferences]; }
-  /** これまでの分岐で出てきた資料（出てきた順） */
+  /** これまでに出てきた資料（分岐の資料と、本文に差し込まれた資料。出てきた順） */
   get seenDocs() { return [...this.#state.docs]; }
   get ending() { return this.#state.ending; }
   get lastChoice() { return this.#state.lastChoice; }
@@ -96,6 +98,28 @@ export class CaseSession {
     return this.#enter(option.next);
   }
 
+  /** 章のはじめに戻れる章（物語の順）。{ chapter, current } */
+  chapters() {
+    const current = this.scene.chapter;
+    return Object.keys(this.#def.chapters)
+      .filter((c) => this.#state.checkpoints[c])
+      .map((chapter) => ({ chapter, current: chapter === current }));
+  }
+
+  /** 章のはじめからやり直す。その章に入ったときの状態に戻し、それより後の章の記録は消す */
+  restartChapter(chapter) {
+    const cp = this.#state.checkpoints[chapter];
+    if (!cp) return [];
+    const order = Object.keys(this.#def.chapters);
+    const keep = {};
+    for (const [c, v] of Object.entries(this.#state.checkpoints)) {
+      if (order.indexOf(c) <= order.indexOf(chapter)) keep[c] = v;
+    }
+    this.#state = { ...clone(cp), checkpoints: keep };
+    this.#rememberDocs(this.scene);
+    return [];
+  }
+
   /** 保存用の素のデータ */
   snapshot() {
     return clone(this.#state);
@@ -120,6 +144,8 @@ export class CaseSession {
     if (!scene) throw new Error(`シーン ${id} がありません`);
 
     const s = this.#state;
+    const fromChapter = this.#def.scenes[s.scene]?.chapter;
+    if (scene.chapter !== fromChapter) this.#saveCheckpoint(id);
     if (scene.gain && !s.inferences.includes(scene.gain)) {
       s.inferences.push(scene.gain);
       events.push({ type: "inference", id: scene.gain });
@@ -133,9 +159,18 @@ export class CaseSession {
     return events;
   }
 
+  /** 章に入った時点の状態を、その章のはじめとして残す */
+  #saveCheckpoint(sceneId) {
+    const { checkpoints, ...rest } = this.#state;
+    const scene = this.#def.scenes[sceneId];
+    checkpoints[scene.chapter] = clone({ ...rest, scene: sceneId, lastChoice: null, bubble: false, ending: null });
+  }
+
   #rememberDocs(scene) {
-    if (scene.type !== "choice") return;
-    for (const d of scene.docs || []) if (!this.#state.docs.includes(d)) this.#state.docs.push(d);
+    const ids = scene.type === "choice" ? scene.docs || []
+      : scene.type === "text" ? this.paragraphs(scene).filter((p) => p.doc).map((p) => p.doc)
+      : [];
+    for (const d of ids) if (!this.#state.docs.includes(d)) this.#state.docs.push(d);
   }
 
   #route(scene) {

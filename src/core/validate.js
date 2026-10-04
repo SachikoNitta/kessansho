@@ -25,6 +25,9 @@ export function validateCase(def, { conditions = createConditionEvaluator(), doc
       check(Array.isArray(s.paragraphs) && s.paragraphs.length, `${id}: paragraphs が空`);
       check(scenes[s.next], `${id}: next "${s.next}" がありません`);
       if (s.gain) check(def.inferences[s.gain], `${id}: gain "${s.gain}" が未定義`);
+      for (const p of s.paragraphs || []) {
+        if (p && p.doc) check(def.docs[p.doc], `${id}: 本文の資料 "${p.doc}" が未定義`);
+      }
     } else if (s.type === "choice") {
       check(s.options.length >= 2, `${id}: 選択肢は2つ以上必要`);
       for (const o of s.options) {

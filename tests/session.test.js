@@ -119,3 +119,50 @@ test("株価チャートの段落は、毎回同じ形で、前日終値と終�
   const flat = stockChart({ name: "N", keys: [4800, 4100, 4100], noise: 0 });
   assert.ok(flat.chart.points.slice(-5).every((v) => v === 4100));
 });
+
+test("本文に差し込んだ資料も、出てきた資料として覚える", () => {
+  const { pages, end, build } = createCaseBuilder();
+  pages("a", "c", [["x"], ["y", { doc: "site" }, { doc: "secret", ifFlag: "f" }]], "fin");
+  end("fin", "c");
+  const def = build({ id: "t", start: "a", chapters: { c: { label: "C", title: "" } }, inferences: {} });
+  const s = new CaseSession(def, { conditions });
+  assert.deepEqual(s.seenDocs, []);
+  s.advance();
+  assert.deepEqual(s.seenDocs, ["site"], "条件つきで見えない資料は覚えない");
+});
+
+test("章のはじめからやり直すと、その章に入ったときの状態に戻る", () => {
+  const { pages, choice, end, build } = createCaseBuilder();
+  pages("p", "c1", [["一章"]], "q");
+  choice("q", "c1", { recap: "r", prompt: "p", next: "n", options: [
+    { label: "外れ", judge: "x", text: ["違う"] },
+    { label: "正解", judge: "o", gain: "A", text: ["そう"] },
+  ] });
+  pages("n", "c2", [["二章"]], "q2");
+  choice("q2", "c2", { recap: "r", prompt: "p", retry: false, next: "fin", options: [
+    { label: "印", judge: "o", flags: ["f"] }, { label: "無印", judge: "x" },
+  ] });
+  end("fin", "c3");
+  const def = build({ id: "t", start: "p", startConfidence: 5, chapters: { c1: { label: "1", title: "" }, c2: { label: "2", title: "" }, c3: { label: "3", title: "" } }, inferences: { A: "推論A" } });
+
+  const s = new CaseSession(def, { conditions });
+  s.advance(); s.choose(0); s.advance(); s.choose(1); s.advance(); s.advance();
+  assert.equal(s.sceneId, "q2");
+  assert.equal(s.confidence, 5, "外れ −1 と正解 +1");
+  s.choose(0);
+  assert.deepEqual(s.chapters().map((c) => c.chapter), ["c1", "c2", "c3"]);
+
+  s.restartChapter("c2");
+  assert.equal(s.sceneId, "n");
+  assert.ok(s.hasInference("A"), "一章で得た推論は残る");
+  assert.ok(!s.hasFlag("f"), "二章で立てたフラグは消える");
+  assert.deepEqual(s.chapters().map((c) => c.chapter), ["c1", "c2"], "後の章の記録は消える");
+
+  s.restartChapter("c1");
+  assert.equal(s.sceneId, "p");
+  assert.equal(s.confidence, 5);
+  assert.ok(!s.hasInference("A"));
+
+  const again = new CaseSession(def, { conditions, snapshot: s.snapshot() });
+  assert.deepEqual(again.chapters().map((c) => c.chapter), ["c1"]);
+});

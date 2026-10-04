@@ -62,8 +62,16 @@ export function turnThePage() {
 }
 
 /** 本文の一段落。i 番目ほど遅れて浮かび上がる */
-export function paragraph(p, i) {
+/**
+ * 本文の一段落。文字のほかに、株価チャート（chart）と、資料の差し込み（doc）がある
+ * @param {{ renderDoc?: (id: string) => { doc: object, nodes: Node[] } }} [ctx]
+ */
+export function paragraph(p, i, ctx = {}) {
   if (p.chart) return stockChart(p.chart, i * 0.35);
+  if (p.doc && ctx.renderDoc) {
+    const { doc, nodes } = ctx.renderDoc(p.doc);
+    return el("figure", { class: `embed embed-${doc.type} reveal`, style: `animation-delay:${i * 0.35}s` }, nodes);
+  }
   const cls = ["reveal", p.muted && "muted", p.emphasis && "emphasis"].filter(Boolean).join(" ");
   return el("p", { class: cls, style: `animation-delay:${i * 0.35}s` }, p.text);
 }

@@ -1,11 +1,11 @@
-// ケース1 Nulo（シナリオ台本「決算書は嘘をつく ケース1 Nulo シナリオ台本」より）
+// ケース1 Nulog（シナリオ台本「決算書は嘘をつく ケース1 Nulog シナリオ台本」より）
 
 import { createCaseBuilder, stockChart } from "../../src/authoring/case-builder.js";
 
 const { pages, choice, route, end, build } = createCaseBuilder();
 
 // 本文に差し込む株価チャート（株価が動く場面で使う）
-const NULO = "Nulo（東証グロース）";
+const TICKER = "Nulog（東証グロース）";
 
 // ---------- プロローグ 白樺のブレンド ----------
 
@@ -44,11 +44,32 @@ pages("pro", "prologue", [
 
 pages("c1", "c1", [
   [
-    "午前二時。モニターには、Nuloの有価証券報告書が開いたままだ。",
+    "午前二時。モニターには、Nulogの有価証券報告書が開いたままだ。",
     "上場から一年。株価は公開価格の四倍。どの記事も、日本発のAIの星だと書く。",
     { text: "だが、数字が綺麗すぎる。", emphasis: true },
     "根拠はまだない。ただ、長くこの仕事をしていると、数字の並びのほうが先に何かを告げてくることがある。",
     { text: "こういう夜は、勘に従って、注記の最後の一行まで読むことにしている。", muted: true },
+  ],
+  [
+    "有報は、会社の自己紹介から始まる。",
+    "Nulog。議事録AIの会社だ。会議を録音すれば、話した人ごとの記録と、決まったことの一覧が、数秒で出てくる。",
+    { doc: "site" },
+    "社名の由来は「New Log」。新しい記録、という意味らしい。エンジニアに言わせれば、null log、つまり「何も書かれていないログ」とも読めるそうだ。",
+  ],
+  [
+    "設立から五年。社員は百二十人あまり。上場したのは、一年前の秋だ。",
+    { doc: "profile" },
+  ],
+  [
+    "社長の早瀬は、四十前。外資のコンサルティング会社を辞めて、この会社を作った。",
+    { doc: "ceoPhoto" },
+    "テレビにもよく出る。いつも同じ黒いシャツで、いつも同じことを言う。「数字は、お客様の評価そのものです」",
+  ],
+  [
+    "本社は、渋谷の新しいビルの十二階にある。採用ページには、ガラス張りのフロアと、笑っている社員の写真が並ぶ。",
+    { doc: "officePhoto" },
+    "感じのいい会社だ。だが、会社の顔は数字の外にある。",
+    { text: "中身は、数字の中にある。", muted: true },
   ],
   [
     "売上は三期で十二億から六十八億。成長企業なら、珍しい話ではない。",
@@ -108,7 +129,7 @@ pages("c1_end", "c1", [[
 pages("i1", "i1", [
   [
     "二日後の午後、分厚い封筒が届いた。",
-    "「これ、全部Nuloですか」",
+    "「これ、全部Nulogですか」",
     "ひよりが、机の上に積まれた紙の山を見上げる。",
     "「上場するときに出した届出書だ。会社がいちばん正直になる書類でもある」",
     "「どうしてですか」",
@@ -132,7 +153,7 @@ pages("i1", "i1", [
 
 pages("c2", "c2", [[
   "届出書の「主要な販売先」には、三つの名前があった。",
-  "同じ週、広告業界の小さなニュースが目に留まる。Nuloの広告が、一社の代理店にまとめて任されたという。",
+  "同じ週、広告業界の小さなニュースが目に留まる。Nulogの広告が、一社の代理店にまとめて任されたという。",
   { text: "売上を払う側と、広告費を受け取る側。両方の名前が、ようやく手に入った。", muted: true },
 ]], "q2_1");
 
@@ -144,12 +165,13 @@ choice("q2_1", "c2", {
   options: [
     { label: "販売パートナーと代理店の法人登記を取る", judge: "o" },
     { label: "アストラ・アドに電話で取材する", judge: "x", text: ["受話器を置く前に気づく。相手に、こちらが嗅ぎ回っていると教えただけだ。"] },
-    { label: "NuloのIRに問い合わせる", judge: "x", text: ["返ってきたのは、決算説明資料のURLだけだった。"] },
+    { label: "NulogのIRに問い合わせる", judge: "x", text: ["返ってきたのは、決算説明資料のURLだけだった。"] },
   ],
 });
 
 pages("c2_b", "c2", [[
-  { text: "法人登記は、誰でも取れる。四社分、八千円足らず。真実の値段としては安い。", muted: true },
+  "法人登記は、誰でも取れる。四社分、八千円足らず。真実の値段としては安い。",
+  { doc: "registry" },
 ]], "q2_2");
 
 choice("q2_2", "c2", {
@@ -214,7 +236,7 @@ choice("q2_4", "c2", {
   retry: false,
   next: "c2_end",
   options: [
-    { label: "Nuloは循環取引をしている", judge: "x", delta: -1, flags: ["assert"], text: ["結論は強いほど読まれる。そして、強いほど狙われる。"] },
+    { label: "Nulogは循環取引をしている", judge: "x", delta: -1, flags: ["assert"], text: ["結論は強いほど読まれる。そして、強いほど狙われる。"] },
     { label: "循環取引の疑いがあり、会社に説明を求める", judge: "o", delta: 1, text: ["事実を並べ、疑いを疑いのまま置く。判断するのは読む側だ。"] },
     { label: "販売パートナー全社と代理店が共謀している", judge: "x", delta: -1, flags: ["toho"], text: ["大阪の会社の名前を、私は消さなかった。"] },
   ],
@@ -222,8 +244,8 @@ choice("q2_4", "c2", {
 
 pages("c2_end", "c2", [[
   "午前六時、レポートを公開した。",
-  { text: "寄り付きで、Nuloの株価は二割下げた。", emphasis: true },
-  stockChart({ name: NULO, keys: [4800, 3900, 3980, 3840], label: "レポート公開の日", seed: 3 }),
+  { text: "寄り付きで、Nulogの株価は二割下げた。", emphasis: true },
+  stockChart({ name: TICKER, keys: [4800, 3900, 3980, 3840], label: "レポート公開の日", seed: 3 }),
 ]], "i2");
 
 // ---------- 幕間2 鳴りやまない電話 ----------
@@ -253,11 +275,11 @@ pages("i2", "i2", [
 // ---------- 第3章 反論 ----------
 
 pages("c3", "c3", [[
-  "夕方五時。Nuloは反論を出した。",
+  "夕方五時。Nulogは反論を出した。",
   "「当該レポートは事実に基づかない憶測であり、法的措置を検討している」",
   "文面は丁寧で、四つの主張が並んでいた。",
   "夜のうちに、SNSは「空売り屋のデマ」で埋まった。翌朝、株価は下げ幅の半分を取り戻した。",
-  stockChart({ name: NULO, keys: [3840, 4050, 4380, 4320], label: "反論の翌朝", seed: 5 }),
+  stockChart({ name: TICKER, keys: [3840, 4050, 4380, 4320], label: "反論の翌朝", seed: 5 }),
 ]], "q3_1");
 
 // 反論への応酬：選択肢は毎回同じ四つ。反論リリースと三つの証拠は、どの分岐でも開ける。やり直しなし。
@@ -318,9 +340,9 @@ choice("q3_4", "c3", {
 });
 
 pages("c3_end", "c3", [[
-  "三日後、Nuloは「特別調査委員会」の設置を発表した。",
+  "三日後、Nulogは「特別調査委員会」の設置を発表した。",
   { text: "株価は、また少し戻った。", muted: true },
-  stockChart({ name: NULO, keys: [4320, 4280, 4450, 4500], label: "調査委員会の設置発表", seed: 11 }),
+  stockChart({ name: TICKER, keys: [4320, 4280, 4450, 4500], label: "調査委員会の設置発表", seed: 11 }),
 ]], "i3");
 
 // ---------- 幕間3 雨の白樺 ----------
@@ -361,7 +383,7 @@ pages("c4", "c4", [[
   "二週間後、特別調査委員会は中間報告を出した。",
   { text: "「現時点において、不正な取引の事実は認められない」", emphasis: true },
   "株価は、私がレポートを出す前の値に戻った。",
-  stockChart({ name: NULO, keys: [4500, 4620, 4780, 4800], label: "中間報告の日", seed: 13 }),
+  stockChart({ name: TICKER, keys: [4500, 4620, 4780, 4800], label: "中間報告の日", seed: 13 }),
   "メールボックスには、名前のない罵倒が四十二通。一通だけ、知らない弁護士事務所からの内容証明が混ざっていた。",
 ]], "q4_1");
 
@@ -484,29 +506,29 @@ route("final", "final", [
 ]);
 
 pages("end_perfect", "final", [[
-  "二か月後の朝、ニュースが流れた。証券取引等監視委員会が、Nuloに強制調査に入った。",
+  "二か月後の朝、ニュースが流れた。証券取引等監視委員会が、Nulogに強制調査に入った。",
   { text: "株価は、ストップ安のまま値がつかなかった。", emphasis: true },
-  stockChart({ name: NULO, keys: [4800, 4100, 4100, 4100], noise: 0, label: "強制調査の報道", note: "ストップ安・売り気配" }),
+  stockChart({ name: TICKER, keys: [4800, 4100, 4100, 4100], noise: 0, label: "強制調査の報道", note: "ストップ安・売り気配" }),
   "半年後に公表された第三者委員会の報告書には、ノクトリンクを経由した資金の流れが、図つきで載っていた。私が書いた輪と、同じ形をしていた。",
   { text: "報告書の脚注に、処理ログの件数が載っていた。発表されたアカウント数の、一割に満たない数字だった。あの一行のメールが、どこかで役に立ったのだろう。", ifFlag: "ally" },
 ]], "epi");
 
 pages("end_late", "final", [[
-  "半年後、Nuloは決算発表を延期した。監査法人が、意見を出せないと伝えたらしい。",
+  "半年後、Nulogは決算発表を延期した。監査法人が、意見を出せないと伝えたらしい。",
   "不正は、結局明るみに出た。私が書いたとおりの形で。",
   "ただ、私が待っていた半年の間に、株価はもう一度高値をつけていた。最後に買った人たちが、いちばん多くを失った。",
-  stockChart({ name: NULO, keys: [4800, 5200, 5600, 5450, 2100], label: "この半年", note: "決算発表の延期", seed: 9 }),
+  stockChart({ name: TICKER, keys: [4800, 5200, 5600, 5450, 2100], label: "この半年", note: "決算発表の延期", seed: 9 }),
   { text: "正しいことは、間に合わなければ、ただの記録になる。", emphasis: true },
 ]], "epi");
 
 pages("end_escape", "final", [[
   "東京地裁から、訴状が届いた。名誉毀損。請求額は五億円。",
   "私のレポートには、書きすぎた一文があった。相手の弁護士は、そこだけを正確に切り取っていた。",
-  { text: "Nuloは、その年も過去最高の売上を発表した。広告費も、過去最高だった。", emphasis: true },
+  { text: "Nulogは、その年も過去最高の売上を発表した。広告費も、過去最高だった。", emphasis: true },
 ]], "epi");
 
 pages("end_trap", "final", [[
-  "公開から四時間後、Nuloはリリースを出した。",
+  "公開から四時間後、Nulogはリリースを出した。",
   "「当該資料は当社が作成したものではなく、偽造されたものである。アストラ・アド社は、記載の日付時点で設立されていない」",
   "反論の余地はなかった。それは、本当のことだったから。",
   { text: "私のこれまでのレポートも、まとめて嘘だと言われた。誰も、もう一度読み返そうとはしなかった。", emphasis: true },
@@ -537,8 +559,42 @@ end("fin", "epilogue");
 // ---------- 資料 ----------
 
 const docs = {
+  site: {
+    label: "コーポレートサイト", source: "nulog.example（スクリーンショット）", type: "site",
+    url: "https://nulog.example/",
+    brand: "Nulog",
+    nav: ["製品", "導入事例", "IR", "採用"],
+    headline: "会議を、会社の記憶に。",
+    lead: "議事録AI「Nulog」は、会議の発言を数秒で議事録に変えます。",
+    badges: ["導入アカウント 8万突破", "継続率 98%"],
+    cta: "無料で試す",
+  },
+  profile: {
+    label: "会社概要", source: "Nulog／有報より", type: "table",
+    caption: "提出会社の概要",
+    columns: ["項目", "内容"],
+    rows: [
+      ["商号", "Nulog株式会社"],
+      ["設立", "5年前"],
+      ["代表者", "代表取締役CEO 早瀬 透"],
+      ["本社", "東京都渋谷区"],
+      ["上場", "1年前・秋（東証グロース）"],
+      ["従業員", "124名"],
+      ["事業", "議事録AI「Nulog」の開発・提供（SaaS）"],
+    ],
+  },
+  ceoPhoto: {
+    label: "社長の写真", source: "決算説明会の配信より", type: "photo",
+    illustration: "stage",
+    caption: "決算説明会で話す早瀬社長",
+  },
+  officePhoto: {
+    label: "本社の写真", source: "採用ページより", type: "photo",
+    illustration: "office",
+    caption: "渋谷本社 12階のオフィス",
+  },
   financials: {
-    label: "決算の推移", source: "Nulo／有報より", type: "table",
+    label: "決算の推移", source: "Nulog／有報より", type: "table",
     caption: "有価証券報告書より・単位 億円",
     columns: ["項目", "2期前", "前期", "今期"],
     rows: [
@@ -559,7 +615,7 @@ const docs = {
   },
   stock: {
     label: "株価の推移", source: "東証グロース・終値", type: "table",
-    caption: "Nulo 株価の推移（円）",
+    caption: "Nulog 株価の推移（円）",
     columns: ["時点", "株価", "公開価格比"],
     rows: [
       ["公開価格", "1,200", "1.0倍"],
@@ -571,7 +627,7 @@ const docs = {
   },
   interview: {
     label: "社長インタビュー", source: "経済誌（前期）", type: "article",
-    head: "「議事録は、会社の記憶です」 Nulo 代表取締役インタビュー",
+    head: "「議事録は、会社の記憶です」 Nulog 代表取締役CEO 早瀬透氏",
     body: [
       "――上場から半年で、株価は三倍を超えました。",
       "「市場が、私たちの技術を正しく評価してくれた結果だと思っています」",
@@ -582,7 +638,7 @@ const docs = {
     ],
   },
   sellers: {
-    label: "主要な販売先", source: "Nulo／届出書より", type: "table",
+    label: "主要な販売先", source: "Nulog／届出書より", type: "table",
     caption: "上場時の届出書「主要な販売先」",
     columns: ["販売パートナー", "売上に占める割合"],
     rows: [
@@ -593,8 +649,8 @@ const docs = {
   },
   adnews: {
     label: "業界ニュース", source: "広告業界紙（前期）", type: "article",
-    head: "Nulo、広告をアストラ・アドに一括委託",
-    body: ["議事録AIのNuloは、広告宣伝業務をアストラ・アドに一括で委託した。従来の複数代理店体制から集約する。"],
+    head: "Nulog、広告をアストラ・アドに一括委託",
+    body: ["議事録AIのNulogは、広告宣伝業務をアストラ・アドに一括で委託した。従来の複数代理店体制から集約する。"],
   },
   registry: {
     label: "法人登記", source: "法務局・登記事項証明書", type: "table",
@@ -608,7 +664,7 @@ const docs = {
     ],
   },
   disclosures: {
-    label: "適時開示", source: "Nulo／適時開示より", type: "table",
+    label: "適時開示", source: "Nulog／適時開示より", type: "table",
     caption: "適時開示の一覧（抜粋）",
     columns: ["時期", "開示"],
     rows: [
@@ -619,7 +675,7 @@ const docs = {
     ],
   },
   auditFees: {
-    label: "監査報酬", source: "Nulo／届出書・有報より", type: "table",
+    label: "監査報酬", source: "Nulog／届出書・有報より", type: "table",
     caption: "監査法人に支払った監査報酬（万円）",
     columns: ["期", "監査法人", "監査報酬"],
     rows: [
@@ -635,7 +691,7 @@ const docs = {
     items: ["A", "B", "C", "D"],
   },
   rebuttal: {
-    label: "反論リリース", source: "Nulo／適時開示", type: "article",
+    label: "反論リリース", source: "Nulog／適時開示", type: "article",
     head: "当社に関する一部レポートについて",
     body: [
       "当該レポートは事実に基づかない憶測であり、当社は法的措置を検討しております。当社の見解は以下のとおりです。",
@@ -656,7 +712,7 @@ const docs = {
   },
   adLibrary: {
     label: "広告ライブラリ", source: "各社の広告ライブラリ", type: "table",
-    caption: "Nulo名義の公開出稿記録（直近1年）",
+    caption: "Nulog名義の公開出稿記録（直近1年）",
     columns: ["媒体", "出稿記録"],
     rows: [
       ["SNS（大手A）", "21件"],
@@ -666,7 +722,7 @@ const docs = {
     ],
   },
   server: {
-    label: "サーバー費用", source: "Nulo／有報より", type: "table",
+    label: "サーバー費用", source: "Nulog／有報より", type: "table",
     caption: "サーバー・クラウド費用（億円）と有料アカウント数",
     columns: ["項目", "2期前", "前期", "今期"],
     rows: [
@@ -687,7 +743,7 @@ const docs = {
     ],
   },
   demandLetter: {
-    label: "内容証明", source: "Nulo 代理人弁護士", type: "article",
+    label: "内容証明", source: "Nulog 代理人弁護士", type: "article",
     head: "通知書（内容証明郵便）",
     body: [
       "貴殿が公開したレポートは事実に基づかず、通知人の名誉および信用を著しく毀損するものです。",
@@ -718,7 +774,7 @@ const docs = {
 };
 
 export default build({
-  id: "nulo",
+  id: "nulog",
   start: "pro",
   startConfidence: 5,
 

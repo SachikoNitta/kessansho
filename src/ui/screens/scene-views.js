@@ -1,6 +1,6 @@
 // シーンの種類ごとの画面。種類は登録制で、新しい種類は createSceneViews に足すだけ（App は変えない）。
 // view は ({ session, actions }) => Node。actions は App が渡す：
-//   next()  choose(index)  openDocs(docIds)  openArchive()  openMenu()  exitCase()
+//   next()  choose(index)  openDocs(docIds)  openArchive()  openMenu()  exitCase()  renderDoc(docId)
 
 import { el } from "../dom.js";
 import { wave, scribble, clipIcon, chapterHeader, turnThePage, paragraph } from "../decorations.js";
@@ -25,7 +25,7 @@ function textView({ session, actions }) {
   if (session.showsChoiceBubble()) {
     parts.push(el("div", { class: "picked" }, [el("span", {}, "→"), el("span", {}, session.lastChoice)]));
   }
-  parts.push(el("div", { class: "prose" }, paragraphs.map(paragraph)));
+  parts.push(el("div", { class: "prose" }, paragraphs.map((p, i) => paragraph(p, i, { renderDoc: actions.renderDoc }))));
   if (scene.gain) {
     parts.push(el("div", { class: "inference circled", style: `animation-delay:${paragraphs.length * 0.35 + 0.2}s` }, [
       scribble(),

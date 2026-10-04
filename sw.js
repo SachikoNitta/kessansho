@@ -24,6 +24,7 @@ const ASSETS = [
   "src/ui/dom.js",
   "src/ui/decorations.js",
   "src/ui/doc-renderers.js",
+  "src/ui/illustrations.js",
   "src/ui/sheet.js",
   "src/ui/sheets.js",
   "src/ui/stock-chart.js",
@@ -31,7 +32,7 @@ const ASSETS = [
   "src/ui/screens/cases.js",
   "src/ui/screens/scene-views.js",
   "cases/catalog.js",
-  "cases/nulo/case.js",
+  "cases/nulog/case.js",
 ];
 
 self.addEventListener("install", (e) => {

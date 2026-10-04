@@ -75,6 +75,10 @@ export class App {
       choose: (index) => this.#commit(this.#session.choose(index)),
       openDocs: (ids) => this.#openDocs(ids),
       openArchive: () => this.#openArchive(),
+      renderDoc: (id) => {
+        const doc = this.#session.definition.docs[id];
+        return { doc, nodes: this.#renderDoc()(doc) };
+      },
       openMenu: () => this.#openNotebook(),
       exitCase: () => {
         this.#deps.progress.clearSnapshot(this.#session.definition.id);
@@ -132,7 +136,12 @@ export class App {
   #openNotebook() {
     this.#sheet.open(notebookSheet({
       session: this.#session,
-      onLeave: () => { this.#sheet.close(); this.showCases(); },
+      onRestart: (chapter) => {
+        this.#sheet.close();
+        this.#commit(this.#session.restartChapter(chapter));
+      },
+      onCases: () => { this.#sheet.close(); this.showCases(); },
+      onCover: () => { this.#sheet.close(); this.showCover(); },
     }));
   }
 

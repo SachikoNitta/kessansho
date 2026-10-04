@@ -10,7 +10,7 @@ const ROOT = resolve(import.meta.dirname, "..");
 test("ビルドは配布ファイルを集め、版を書き込む", () => {
   const out = mkdtempSync(join(tmpdir(), "kessansho-build-"));
   execFileSync("node", [join(ROOT, "scripts/build.js"), "1.2.3", out]);
-  for (const f of ["index.html", "src/main.js", "cases/nulo/case.js", "sw.js", ".nojekyll"]) {
+  for (const f of ["index.html", "src/main.js", "cases/nulog/case.js", "sw.js", ".nojekyll"]) {
     assert.ok(existsSync(join(out, f)), `${f} がありません`);
   }
   assert.ok(!existsSync(join(out, "tests")), "テストは配布しない");

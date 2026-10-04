@@ -37,24 +37,56 @@ function noteList(caption, entries) {
   ]);
 }
 
-/** 目次：推理ノートと、控えめな状況表示 */
-export function notebookSheet({ session, onLeave }) {
+/** 目次：章を選んでやり直す・推理ノート・控えめな状況表示・表紙や調査一覧へ戻る */
+export function notebookSheet({ session, onRestart, onCases, onCover }) {
   const def = session.definition;
   const ids = Object.keys(def.inferences);
   const ch = def.chapters[session.scene.chapter] || {};
+
+  // やり直しは二度押しで確かめる（その章より後の進み具合が消えるため）
+  let armed = null;
+  const chapterItems = session.chapters().map(({ chapter, current }) => {
+    const c = def.chapters[chapter];
+    const hint = el("span", { class: "hand" }, current ? "いまここ" : "ここから");
+    const button = el("button", {
+      class: "menu-item chapter-item" + (current ? " current" : ""),
+      onclick: () => {
+        if (armed !== chapter) {
+          armed = chapter;
+          chapterItems.forEach((i) => i.reset());
+          hint.textContent = "もう一度押す";
+          return;
+        }
+        onRestart(chapter);
+      },
+    }, [
+      el("span", { class: "chapter-name" }, [el("span", { class: "it" }, c.label), c.title && ` ${c.title}`]),
+      el("span", { class: "dots" }),
+      hint,
+    ]);
+    button.reset = () => { hint.textContent = current ? "いまここ" : "ここから"; };
+    return button;
+  });
+
   return {
-    title: "Notebook",
+    title: "Contents",
     label: "目次",
     sub: `${ch.label || ""} ${ch.title || ""}`.trim(),
     body: el("div", { class: "sheet-body" }, [
+      el("div", { class: "caption" }, "章のはじめからやり直す（二度押し）"),
+      el("div", { class: "menu-list" }, chapterItems),
+      el("div", { class: "menu-list", style: "margin-top:12px" }, [
+        el("button", { class: "menu-item", onclick: onCases }, [
+          el("span", {}, "調査一覧へ"), el("span", { class: "dots" }), el("span", { class: "hand" }, "続きは保存されます"),
+        ]),
+        el("button", { class: "menu-item", onclick: onCover }, [
+          el("span", {}, "表紙へ"), el("span", { class: "dots" }), el("span", { class: "hand" }, "続きは保存されます"),
+        ]),
+      ]),
+      el("div", { style: "height:12px" }),
       noteList(`推論 ${session.inferences.length} / ${ids.length}`,
         ids.map((id) => ({ text: def.inferences[id], got: session.hasInference(id) }))),
       el("div", { class: "caption", style: "text-align:right" }, `確度 ${session.confidence}`),
-      el("div", { class: "menu-list" }, [
-        el("button", { class: "menu-item", onclick: onLeave }, [
-          el("span", {}, "調査一覧へ"), el("span", { class: "dots" }), el("span", { class: "hand" }, "続きは保存されます"),
-        ]),
-      ]),
     ]),
   };
 }

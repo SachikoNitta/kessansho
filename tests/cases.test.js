@@ -24,8 +24,8 @@ for (const c of catalog.filter((c) => c.status === "open")) {
   });
 }
 
-test("Nulo：全問正解で確度18・完全な論証（台本どおり）", async () => {
-  const { stats } = validateCase(await repo.loadCase("nulo"));
+test("Nulog：全問正解で確度18・完全な論証（台本どおり）", async () => {
+  const { stats } = validateCase(await repo.loadCase("nulog"));
   assert.equal(stats.maxConfidence, 18);
   assert.equal(stats.perfectEnding, "end_perfect");
 });
