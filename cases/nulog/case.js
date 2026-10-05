@@ -92,7 +92,7 @@ choice("q1_1", "c1", {
     { label: "売上の割に、売掛金が多すぎる", judge: "x", text: ["売掛金は三億。売上六十八億に対して、むしろ小さい。金はちゃんと入ってきている。帳簿だけの架空売上なら、こうはならない。"] },
     {
       label: "売上と広告費が、同じだけ増えている", judge: "o", gain: "A",
-      text: [
+      text: [[
         "売上が十九億増えた年、広告費は十八億増えている。翌年は三十七億と三十六億。",
         { graph: {
           kind: "bar", title: "前の期から増えた額", unit: "億円",
@@ -100,6 +100,7 @@ choice("q1_1", "c1", {
           series: [{ name: "売上高", values: [19, 37] }, { name: "広告宣伝費", values: [18, 36] }],
         } },
         "偶然にしては、揃いすぎている。",
+      ], [
         "しかも今期は、売上の八割以上が広告に消えている。同業は、二割に届かない。",
         { graph: {
           kind: "hbar", title: "広告宣伝費率（今期）", unit: "%",
@@ -107,7 +108,7 @@ choice("q1_1", "c1", {
           series: [{ name: "広告宣伝費率", values: [84, 22, 18, 14] }],
         } },
         { text: "どこか、気持ちが悪い。", muted: true },
-      ],
+      ]],
     },
     { label: "成長しているのに、赤字が続いている", judge: "tri", text: ["成長企業の赤字は珍しくない。それだけでは、誰も耳を貸さない。"] },
   ],
@@ -346,6 +347,7 @@ pages("c2_end", "c2", [[
   { doc: "report", ifFlag: "measured" },
   { doc: "reportAssert", ifFlag: "assert" },
   { doc: "reportToho", ifFlag: "toho" },
+], [
   { text: "寄り付きで、Nulogの株価は二割下げた。", emphasis: true },
   stockChart({ name: TICKER, keys: [4800, 3900, 3980, 3840], before: BUBBLE, label: "レポート公開の日", seed: 3 }),
 ]], "i2");
@@ -380,6 +382,7 @@ pages("i2", "i2", [
 pages("c3", "c3", [[
   "夕方五時。Nulogは反論を出した。適時開示の欄に、一枚の文書が載った。",
   { doc: "rebuttal" },
+], [
   "文面は丁寧で、四つの主張が並んでいた。",
   "夜のうちに、SNSは「空売り屋のデマ」で埋まった。",
   { text: "空売りは、株価が下がれば儲かる取引だ。私はNulogの株を、売りも買いもしていない。だが、そう書いても読む人は少ない。", muted: true },

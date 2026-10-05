@@ -134,12 +134,15 @@ button { font: inherit; color: inherit; }
   padding: 28px 30px 0;
 }
 
-/* 問いの資料：問いの上に、開く操作なしで並べる */
-.q-docs { display: flex; flex-direction: column; gap: 18px; padding: 24px 22px 0 24px; }
+/* 問いの資料：一画面に一枚ずつ、押してめくる */
+.steps { flex: 1; display: flex; flex-direction: column; }
+.q-doc-count { font-size: 13px; color: var(--muted); margin-bottom: -6px; }
 .q-doc { margin: 0; }
+.q-back { align-self: flex-start; margin: -8px 0 6px; font-size: 14px; }
 
 /* 本文の下に問いを出すとき、問いの上に置く本文 */
 .lead { display: flex; flex-direction: column; gap: 20px; padding: 28px 30px 0; }
+.tap-area .lead { padding: 0; }
 
 .turn {
   padding: 16px 28px 40px;

@@ -3,6 +3,7 @@
 //   pages(id, chapter, [[段落…], [段落…]], next)   本文。1つの配列が1画面。2画面目以降の id は `${id}_2`…
 //   choice(id, chapter, { recap, prompt, docs, retry, next, options })
 //     option = { label, judge: "o"|"tri"|"x", text?, gain?, delta?, flags?, requires?, next? }
+//       text は段落の配列（1画面）、または段落の配列の配列（複数画面）
 //       delta 省略時：retry の分岐は o +1 / tri 0 / x −1、retry: false の分岐は 0
 //       retry の分岐で o 以外を選ぶと、text を読んで分岐に戻る
 //       text がない選択肢は、選んだ答えを吹き出しにして次のシーンへ
@@ -75,8 +76,17 @@ export function createCaseBuilder() {
       const after = opt.next || (retry && opt.judge !== "o" ? id : def.next);
       const option = { label: opt.label, judge: opt.judge, delta, flags: opt.flags || [], requires: opt.requires || null };
       if (opt.text) {
+        // text は段落の配列（1画面）か、段落の配列の配列（複数画面。推論は最後の画面に出す）
         const resultId = `${id}__${i + 1}`;
-        add(resultId, { type: "text", chapter, showChoice: true, paragraphs: opt.text, gain: opt.gain || null, next: after });
+        const screens = Array.isArray(opt.text[0]) ? opt.text : [opt.text];
+        screens.forEach((paragraphs, k) => {
+          const last = k === screens.length - 1;
+          add(k === 0 ? resultId : `${resultId}_${k + 1}`, {
+            type: "text", chapter, showChoice: k === 0, paragraphs,
+            gain: last ? opt.gain || null : null,
+            next: last ? after : `${resultId}_${k + 2}`,
+          });
+        });
         option.next = resultId;
       } else {
         option.next = after;
