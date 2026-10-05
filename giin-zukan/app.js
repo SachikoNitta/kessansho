@@ -120,7 +120,7 @@ function buildAxes(data) {
     { id: "region", label: "地域", kind: "cat", values: REGIONS, get: (m) => m.region },
     hasPromises && { id: "field", label: "一番の得意分野", kind: "cat", values: [...new Set(data.members.map((m) => m.fields?.[0]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja")), get: (m) => m.fields?.[0] ?? "—" },
     hasPromises && { id: "achieve", label: "公約の実現割合（AI判定）", kind: "ord", values: ["実現なし", "3割未満", "3〜6割", "6割以上"], get: (m) => { const s = achievedShare(m); return s <= 0 ? "実現なし" : band(s, [0.299, 0.6], ["3割未満", "3〜6割", "6割以上"]); } },
-    hasActivity && { id: "speeches", label: "国会での発言回数", kind: "ord", values: ["20回以下", "21〜50回", "51〜100回", "101回以上"], get: (m) => band(m.activity?.speeches ?? 0, [20, 50, 100], ["20回以下", "21〜50回", "51〜100回", "101回以上"]) },
+    hasActivity && { id: "speeches", label: data.meta.sample ? "国会での発言回数" : "国会での発言回数（答弁・議事進行も含む）", kind: "ord", values: ["0回", "1〜20回", "21〜50回", "51〜100回", "101回以上"], get: (m) => band(m.activity?.speeches ?? 0, [0, 20, 50, 100], ["0回", "1〜20回", "21〜50回", "51〜100回", "101回以上"]) },
     hasAchievements && { id: "bills", label: "議員立法の提出", kind: "ord", values: ["なし", "1件", "2件以上"], get: (m) => band(bills(m), [0, 1], ["なし", "1件", "2件以上"]) },
   ].filter(Boolean);
   return { axes, byId: new Map(axes.map((a) => [a.id, a])), age, hasPromises };
@@ -192,7 +192,7 @@ function renderApp(root, data) {
     <section class="board" aria-label="集団の地図">
       <div class="legend-row" id="legend"></div>
       <div class="matrix-scroll"><div class="matrix" id="matrix"></div></div>
-      <p class="hint">マスを選ぶと、その集団のプロフィールが下に出ます。点にふれると名前、選ぶとその議員のステータス画面が開きます。</p>
+      <p class="hint">マスを選ぶと、その集団のプロフィールが下に出ます。点にふれると名前、選ぶとその議員のステータス画面が開きます。${data.meta.sample ? "" : "発言回数は2025年10月〜2026年9月の会議録の件数で、大臣の答弁や委員長の議事進行も1件に数えます。最近初当選した議員は期間が短くなります。"}</p>
     </section>
 
     <section class="group" id="group" aria-live="polite"></section>

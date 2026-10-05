@@ -10,7 +10,8 @@ const [css, js, data] = await Promise.all([read("style.css"), read("app.js"), re
 // </script> がデータに含まれても壊れないように
 const json = JSON.stringify(JSON.parse(data)).replace(/</g, "\\u003c");
 
-const html = `<title>国会議員図鑑</title>
+const html = `<meta charset="utf-8">
+<title>国会議員図鑑</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=M+PLUS+Rounded+1c:wght@400;700&display=swap">
 <style>
 ${css}
