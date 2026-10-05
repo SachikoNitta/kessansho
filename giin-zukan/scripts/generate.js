@@ -6,7 +6,7 @@
 // 2. 設定に書いた公約ページ（選挙公報・公式サイトなど）を取り込む
 // 3. Claude に「資料にあることだけ」で公約と実績を抜き出させる（出典は原文の引用つき）
 // 4. 引用が本当に資料にあるかを機械的に照合し、確かめられないものは捨てる
-// 5. data/members.json に「未確認（AI下書き）」として書き込む
+// 5. data/members.json に「未確認（AI下書き）」として書き込む（名簿にいる議員なら、公式の基本属性は残して公約・実績だけ足す）
 //
 // 人の目で出典を確かめたら、その議員の review.reviewed を true にする。
 
@@ -114,12 +114,14 @@ async function main() {
   if (docs.length === 0) throw new Error("資料が一つも集まりませんでした。");
   console.log(`資料 ${docs.length} 件を Claude に渡します`);
 
-  const { extraction, model } = await extract(member, docs);
+  const data = JSON.parse(await readFile(DATA, "utf8"));
+  const existing = data.members.find((m) => m.id === member.id);
+  const { extraction, model } = await extract({ ...existing, ...member, name: existing?.name ?? member.name }, docs);
   const verified = verifyExtraction(extraction, docs);
   for (const d of verified.dropped) console.warn(`捨てました: ${d.where} — ${d.reason}`);
 
-  const data = JSON.parse(await readFile(DATA, "utf8"));
-  const next = upsertMember(data, {
+  // 名簿にいる議員（import-roster.js で取り込んだ人）なら、公式の基本属性はそのまま残し、AI の下書きだけを足す
+  const base = existing ?? {
     id: member.id,
     name: member.name,
     kana: member.kana,
@@ -131,12 +133,15 @@ async function main() {
     birthYear: member.birthYear,
     career: member.career,
     region: member.region,
+    avatar: member.avatar ?? null,
     activity: {
       speeches: speeches.total,
       since: from,
       source: { title: `国会会議録検索システム（発言者「${speeches.speaker}」${from}以降）`, url: speeches.url },
     },
-    avatar: member.avatar,
+  };
+  const next = upsertMember(data, {
+    ...base,
     catchphrase: verified.catchphrase,
     fields: verified.fields,
     promises: verified.promises,

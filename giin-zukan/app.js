@@ -12,8 +12,8 @@ const STATUS = {
 };
 const STATUS_ORDER = Object.keys(STATUS);
 const TYPE = { bill: "法案", question: "質問・質疑", written_question: "質問主意書", committee: "委員会・役職", other: "その他" };
-const CAREERS = ["地方議員", "官僚", "議員秘書", "民間企業", "弁護士", "医師・医療", "メディア", "労働組合", "教育・研究", "その他"];
-const REGIONS = ["北海道", "東北", "北関東", "南関東", "東京", "北陸信越", "東海", "近畿", "中国", "四国", "九州"];
+const CAREERS = ["地方議員・首長", "官僚", "議員秘書", "民間企業", "弁護士", "医師・医療", "メディア", "労働組合", "教育・研究", "その他"];
+const REGIONS = ["北海道", "東北", "北関東", "南関東", "東京", "北陸信越", "東海", "近畿", "中国", "四国", "九州", "全国（参院比例）"];
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const safeUrl = (u) => (/^https?:\/\//.test(u ?? "") ? u : "#");
@@ -46,6 +46,14 @@ function avatar(a = {}, color = "#2F5BEA") {
   </svg>`;
 }
 
+// 実在の議員には顔を描かない（似ていない顔を作らないため）。政党の色のシルエットだけ
+function silhouette(color = "#8A90A6") {
+  return `<svg viewBox="0 0 120 110" role="img" aria-hidden="true">
+    <path d="M18 110 C20 88 38 80 60 80 C82 80 100 88 102 110Z" fill="${color}" stroke="#1B2238" stroke-width="3"/>
+    <circle cx="60" cy="52" r="26" fill="${color}" stroke="#1B2238" stroke-width="3" opacity=".55"/>
+  </svg>`;
+}
+
 function statusCounts(members) {
   const c = Object.fromEntries(STATUS_ORDER.map((k) => [k, 0]));
   for (const m of members) for (const p of m.promises ?? []) c[p.status] = (c[p.status] ?? 0) + 1;
@@ -75,8 +83,14 @@ function sourceList(sources, label = "出典") {
 // ---- 軸 -------------------------------------------------------------------
 // kind: "cat"（順序のない区分）は区別しやすいカテゴリ色、"ord"（順序のある区分）は一色の濃淡で塗る
 function buildAxes(data) {
-  const asOf = Number(String(data.meta.updatedAt ?? new Date().getFullYear()).slice(0, 4));
-  const age = (m) => asOf - m.birthYear;
+  // 年齢は生年月日（わかる範囲）とデータの時点から数える。生年がわからなければ null
+  const [ay, am, ad] = String(data.meta.updatedAt ?? new Date().toISOString().slice(0, 10)).split("-").map(Number);
+  const age = (m) => {
+    if (!m.birthYear) return null;
+    const [, bm, bd] = String(m.birth ?? m.birthYear).split("-").map(Number);
+    const notYet = bm && (bm > am || (bm === am && bd && bd > ad));
+    return ay - m.birthYear - (notYet ? 1 : 0);
+  };
   const achievedShare = (m) => {
     const ps = m.promises ?? [];
     return ps.length ? ps.filter((p) => p.status === "achieved").length / ps.length : -1;
@@ -84,21 +98,32 @@ function buildAxes(data) {
   const bills = (m) => (m.achievements ?? []).filter((a) => a.type === "bill").length;
   const band = (v, edges, labels) => labels[edges.findIndex((e) => v <= e)] ?? labels.at(-1);
 
+  // 政党が9つ以上なら、色分けできるように上位7つ＋「その他」にまとめた軸も用意する
+  const partyName = (m) => data.partyById.get(m.party)?.name;
+  const OTHER = "その他の会派";
+  const top = data.parties.length > 8 ? new Set(data.parties.slice(0, 7).map((p) => p.name)) : null;
+  const hasPromises = data.members.some((m) => (m.promises ?? []).length);
+  const hasAchievements = data.members.some((m) => (m.achievements ?? []).length);
+  const hasActivity = data.members.some((m) => m.activity);
+
   const axes = [
     { id: "none", label: "まとめない", kind: "cat", values: ["全員"], get: () => "全員" },
     { id: "house", label: "院", kind: "cat", values: ["衆議院", "参議院"], get: (m) => m.house },
-    { id: "party", label: "政党", kind: "cat", values: data.parties.map((p) => p.name), get: (m) => data.partyById.get(m.party)?.name },
-    { id: "gender", label: "性別", kind: "cat", values: ["男性", "女性", "その他・非公表"], get: (m) => m.gender },
-    { id: "age", label: "年代", kind: "ord", values: ["30代以下", "40代", "50代", "60代", "70代以上"], get: (m) => band(age(m), [39, 49, 59, 69], ["30代以下", "40代", "50代", "60代", "70代以上"]) },
+    top
+      ? { id: "party", label: "政党（上位7＋その他）", kind: "cat", values: [...top, OTHER], get: (m) => (top.has(partyName(m)) ? partyName(m) : OTHER) }
+      : { id: "party", label: "政党", kind: "cat", values: data.parties.map((p) => p.name), get: partyName },
+    top && { id: "party_all", label: "政党（すべて）", kind: "cat", values: data.parties.map((p) => p.name), get: partyName },
+    { id: "gender", label: "性別", kind: "cat", values: ["男性", "女性", "その他・非公表", "照合できず"], get: (m) => m.gender },
+    { id: "age", label: "年代", kind: "ord", values: ["30代以下", "40代", "50代", "60代", "70代以上", "生年不明"], get: (m) => (age(m) === null ? "生年不明" : band(age(m), [39, 49, 59, 69], ["30代以下", "40代", "50代", "60代", "70代以上"])) },
     { id: "terms", label: "当選回数", kind: "ord", values: ["1回", "2〜3回", "4〜6回", "7回以上"], get: (m) => band(m.terms, [1, 3, 6], ["1回", "2〜3回", "4〜6回", "7回以上"]) },
-    { id: "career", label: "前職", kind: "cat", values: CAREERS, get: (m) => m.career },
+    { id: "career", label: data.meta.sample ? "前職" : "前職（経歴文からの目安）", kind: "cat", values: CAREERS, get: (m) => m.career },
     { id: "region", label: "地域", kind: "cat", values: REGIONS, get: (m) => m.region },
-    { id: "field", label: "一番の得意分野", kind: "cat", values: [...new Set(data.members.map((m) => m.fields?.[0]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja")), get: (m) => m.fields?.[0] ?? "—" },
-    { id: "achieve", label: "公約の実現割合（AI判定）", kind: "ord", values: ["実現なし", "3割未満", "3〜6割", "6割以上"], get: (m) => { const s = achievedShare(m); return s <= 0 ? "実現なし" : band(s, [0.299, 0.6], ["3割未満", "3〜6割", "6割以上"]); } },
-    { id: "speeches", label: "国会での発言回数", kind: "ord", values: ["20回以下", "21〜50回", "51〜100回", "101回以上"], get: (m) => band(m.activity?.speeches ?? 0, [20, 50, 100], ["20回以下", "21〜50回", "51〜100回", "101回以上"]) },
-    { id: "bills", label: "議員立法の提出", kind: "ord", values: ["なし", "1件", "2件以上"], get: (m) => band(bills(m), [0, 1], ["なし", "1件", "2件以上"]) },
-  ];
-  return { axes, byId: new Map(axes.map((a) => [a.id, a])), age };
+    hasPromises && { id: "field", label: "一番の得意分野", kind: "cat", values: [...new Set(data.members.map((m) => m.fields?.[0]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja")), get: (m) => m.fields?.[0] ?? "—" },
+    hasPromises && { id: "achieve", label: "公約の実現割合（AI判定）", kind: "ord", values: ["実現なし", "3割未満", "3〜6割", "6割以上"], get: (m) => { const s = achievedShare(m); return s <= 0 ? "実現なし" : band(s, [0.299, 0.6], ["3割未満", "3〜6割", "6割以上"]); } },
+    hasActivity && { id: "speeches", label: "国会での発言回数", kind: "ord", values: ["20回以下", "21〜50回", "51〜100回", "101回以上"], get: (m) => band(m.activity?.speeches ?? 0, [20, 50, 100], ["20回以下", "21〜50回", "51〜100回", "101回以上"]) },
+    hasAchievements && { id: "bills", label: "議員立法の提出", kind: "ord", values: ["なし", "1件", "2件以上"], get: (m) => band(bills(m), [0, 1], ["なし", "1件", "2件以上"]) },
+  ].filter(Boolean);
+  return { axes, byId: new Map(axes.map((a) => [a.id, a])), age, hasPromises };
 }
 
 // 色に使える軸は区分が8つまで（それより多い色は見分けられない）
@@ -107,8 +132,10 @@ const colorable = (axis) => axis.values.length <= 8;
 function colorOf(axis, value) {
   const i = axis.values.indexOf(value);
   if (axis.id === "none") return "var(--s1)";
+  // わからない人は、どの区分の色とも紛れない灰色
+  if (/不明|照合できず|その他の会派/.test(value)) return "var(--st-not_started)";
   if (axis.kind === "ord") {
-    const steps = axis.values.length;
+    const steps = axis.values.filter((v) => !/不明/.test(v)).length;
     const q = steps === 1 ? 5 : Math.round(1 + (i / (steps - 1)) * 4); // q1〜q5 に割り当てる
     return `var(--q${q})`;
   }
@@ -116,9 +143,10 @@ function colorOf(axis, value) {
 }
 
 const PRESETS = [
-  { label: "政党ごとの女性の割合", x: "party", y: "none", color: "gender" },
+  { label: "政党ごとの女性の割合", x: "party_all", y: "none", color: "gender" },
+  { label: "政党ごとの年代", x: "party", y: "age", color: "gender" },
   { label: "当選回数と発言の多さ", x: "terms", y: "speeches", color: "party" },
-  { label: "前職と得意分野", x: "career", y: "none", color: "party" },
+  { label: "前職と政党", x: "career", y: "none", color: "party" },
   { label: "年代と公約の実現", x: "age", y: "achieve", color: "house" },
   { label: "地域ごとの政党", x: "region", y: "house", color: "party" },
 ];
@@ -126,8 +154,11 @@ const PRESETS = [
 // ---- 画面 -----------------------------------------------------------------
 function renderApp(root, data) {
   data.partyById = new Map(data.parties.map((p) => [p.id, p]));
-  const { axes, byId, age } = buildAxes(data);
-  const state = { x: "party", y: "none", color: "gender", house: "", q: "", cell: null, sort: "kana", limit: 40 };
+  const { axes, byId, age, hasPromises } = buildAxes(data);
+  // 使えない軸を含む問いは出さない。「すべての政党」がない（政党が8つ以下）ときは政党の軸で代わりにする
+  const presets = PRESETS.map((p) => ({ ...p, x: byId.has(p.x) ? p.x : p.x.replace("_all", "") }))
+    .filter((p) => [p.x, p.y, p.color].every((id) => byId.has(id)));
+  const state = { x: presets[0]?.x ?? "party", y: "none", color: "gender", house: "", q: "", cell: null, sort: "kana", limit: 40 };
 
   const axisOptions = (list, current) => list.map((a) => `<option value="${a.id}" ${a.id === current ? "selected" : ""}>${esc(a.label)}</option>`).join("");
 
@@ -136,7 +167,9 @@ function renderApp(root, data) {
       <h1 class="logo"><small>KOKKAI GIIN ZUKAN</small>国会議員<em>図鑑</em></h1>
       <p class="lede">一人ひとりが一つの点。軸を選んで、議員の集団を切り分けてみましょう。</p>
     </header>
-    ${data.meta.sample ? `<p class="notice"><strong>サンプル表示中：</strong>${esc(data.meta.note)}</p>` : ""}
+    ${data.meta.sample
+      ? `<p class="notice"><strong>サンプル表示中：</strong>${esc(data.meta.note)}</p>`
+      : `<p class="notice is-info"><strong>実在の議員 ${data.members.length}人</strong>（衆議院 ${data.meta.asOf?.衆議院 ?? ""}、参議院 ${data.meta.asOf?.参議院 ?? ""} 時点）。${esc(data.meta.note)}</p>`}
 
     <section class="controls" aria-label="分析の設定">
       <div class="axis-pickers">
@@ -151,9 +184,9 @@ function renderApp(root, data) {
           <button class="chip" data-house="衆議院" aria-pressed="false">衆議院</button>
           <button class="chip" data-house="参議院" aria-pressed="false">参議院</button>
         </div>
-        <input type="search" id="q" placeholder="名前・公約の言葉で絞り込む（例：保育）" aria-label="名前や公約の言葉で絞り込む">
+        <input type="search" id="q" placeholder="${hasPromises ? "名前・公約の言葉で絞り込む（例：保育）" : "名前・経歴の言葉で絞り込む（例：弁護士、松下政経塾）"}" aria-label="名前や公約の言葉で絞り込む">
       </div>
-      <div class="presets" aria-label="問いから始める"><span>問いから始める：</span>${PRESETS.map((p, i) => `<button class="preset" data-preset="${i}">${esc(p.label)}</button>`).join("")}</div>
+      <div class="presets" aria-label="問いから始める"><span>問いから始める：</span>${presets.map((p, i) => `<button class="preset" data-preset="${i}">${esc(p.label)}</button>`).join("")}</div>
     </section>
 
     <section class="board" aria-label="集団の地図">
@@ -168,6 +201,7 @@ function renderApp(root, data) {
       公約・実績は国会会議録・選挙公報などの公開情報から AI が下書きし、引用が原文にあることを機械で照合しています。
       「公約の実現割合」は AI の判定にもとづくため、各議員の画面で根拠の出典を確かめてください。
       ${data.meta.updatedAt ? `最終更新 ${esc(data.meta.updatedAt)}` : ""}
+      ${data.meta.sources?.length ? `<ul class="sources">${data.meta.sources.map((x) => `<li><a href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join("")}</ul>` : ""}
     </footer>
     <div class="tooltip" id="tip" hidden></div>
     <div class="detail" id="detail" hidden></div>`;
@@ -181,7 +215,7 @@ function renderApp(root, data) {
   const filtered = () => data.members.filter((m) => {
     if (state.house && m.house !== state.house) return false;
     if (!state.q) return true;
-    const hay = [m.name, m.kana, m.district, ...(m.fields ?? []), ...(m.promises ?? []).map((p) => p.title)].join(" ");
+    const hay = [m.name, m.kana, m.district, m.career, m.bio, ...(m.fields ?? []), ...(m.promises ?? []).map((p) => p.title)].join(" ");
     return hay.includes(state.q);
   });
 
@@ -193,7 +227,8 @@ function renderApp(root, data) {
     const cIndex = (m) => C.values.indexOf(C.get(m));
 
     // 区分ごとに数える（0人の区分は出さない。ただし順序のある軸は抜けがわかるように残す）
-    const present = (axis) => axis.values.filter((v) => axis.kind === "ord" || list.some((m) => axis.get(m) === v));
+    const unknown = (v) => /不明|照合できず/.test(v);
+    const present = (axis) => axis.values.filter((v) => (axis.kind === "ord" && !unknown(v)) || list.some((m) => axis.get(m) === v));
     const xs = present(X);
     const ys = present(Y);
     const cells = new Map();
@@ -248,7 +283,7 @@ function renderApp(root, data) {
       const sp = ms.map((m) => m.activity?.speeches ?? 0).sort((a, b) => a - b);
       return {
         n: ms.length,
-        age: ms.reduce((s, m) => s + age(m), 0) / n,
+        age: (() => { const ages = ms.map(age).filter((x) => x !== null); return ages.reduce((s, x) => s + x, 0) / (ages.length || 1); })(),
         female: pct(ms.filter((m) => m.gender === "女性").length, ms.length),
         terms: ms.reduce((s, m) => s + m.terms, 0) / n,
         speeches: sp.length ? sp[Math.floor(sp.length / 2)] : 0,
@@ -257,22 +292,44 @@ function renderApp(root, data) {
     const g = stat(group);
     const a = stat(all);
 
-    // 得意分野（その分野を掲げる議員の割合。全体との差も出す）
-    const fieldShare = (ms) => {
-      const c = new Map();
-      for (const m of ms) for (const f of m.fields ?? []) c.set(f, (c.get(f) ?? 0) + 1);
-      return c;
+    // ある区分に入る議員の割合を、全体と並べて出す（keys は一人が複数の区分に入ってもよい）
+    const shareList = (title, keys, note, limit = 6) => {
+      const count = (ms) => {
+        const c = new Map();
+        for (const m of ms) for (const k of keys(m)) c.set(k, (c.get(k) ?? 0) + 1);
+        return c;
+      };
+      const gc = count(group);
+      const ac = count(all);
+      const top = [...gc.entries()].sort((p, q) => q[1] - p[1]).slice(0, limit);
+      const max = Math.max(...top.map(([k, v]) => Math.max(v / group.length, (ac.get(k) ?? 0) / all.length)), 0.01);
+      return `<section class="panel"><h3>${title}</h3>
+        <ul class="fields">${top.map(([k, v]) => {
+          const share = v / group.length;
+          const base = (ac.get(k) ?? 0) / all.length;
+          return `<li><span class="f-name" title="${esc(k)}">${esc(k)}</span>
+            <span class="f-track"><span class="f-bar" style="width:${(share / max) * 100}%"></span><span class="f-base" style="left:${Math.min(99.5, (base / max) * 100)}%" title="全体 ${Math.round(base * 100)}%"></span></span>
+            <span class="f-val">${Math.round(share * 100)}%</span></li>`;
+        }).join("")}</ul>
+        <p class="note">${note}</p></section>`;
     };
-    const gf = fieldShare(group);
-    const af = fieldShare(all);
-    const topFields = [...gf.entries()].sort((p, q) => q[1] - p[1]).slice(0, 6);
-    const maxShare = Math.max(...topFields.map(([, v]) => v / group.length), 0.01);
+    const baseNote = "縦の線は議員全体での割合。";
+    const panels = hasPromises
+      ? `<section class="panel">
+          <h3>公約の状況 <span class="badge-ai">AI判定</span></h3>
+          ${statusBar(statusCounts(group))}
+          <p class="note">この集団の議員が掲げた公約 ${group.reduce((s, m) => s + (m.promises?.length ?? 0), 0)} 件の内訳。全体の内訳：</p>
+          ${statusBar(statusCounts(all), "全体の公約の状況")}
+        </section>
+        ${shareList("よく掲げる分野", (m) => m.fields ?? [], `棒はこの集団でその分野を掲げる議員の割合。${baseNote}`)}`
+      : `${shareList("前職（経歴文からの目安）", (m) => [m.career], `議員になる前の主な職業を、公式の経歴の文から機械的に分類したもの。${baseNote}`)}
+        ${shareList("政党", (m) => [data.partyById.get(m.party)?.name], baseNote)}`;
 
     const sorters = {
       kana: (p, q) => p.kana.localeCompare(q.kana, "ja"),
       speeches: (p, q) => (q.activity?.speeches ?? 0) - (p.activity?.speeches ?? 0),
       terms: (p, q) => q.terms - p.terms,
-      age: (p, q) => age(q) - age(p),
+      age: (p, q) => (age(q) ?? -1) - (age(p) ?? -1),
     };
     const rows = [...group].sort(sorters[state.sort]);
     const shown = rows.slice(0, state.limit);
@@ -290,23 +347,7 @@ function renderApp(root, data) {
         ${kpi("発言回数（中央値）", `${g.speeches}<small>回</small>`, `全体 ${a.speeches}回`)}
       </div>
       <div class="group-grid">
-        <section class="panel">
-          <h3>公約の状況 <span class="badge-ai">AI判定</span></h3>
-          ${statusBar(statusCounts(group))}
-          <p class="note">この集団の議員が掲げた公約 ${group.reduce((s, m) => s + (m.promises?.length ?? 0), 0)} 件の内訳。全体の内訳：</p>
-          ${statusBar(statusCounts(all), "全体の公約の状況")}
-        </section>
-        <section class="panel">
-          <h3>よく掲げる分野</h3>
-          <ul class="fields">${topFields.map(([f, v]) => {
-            const share = v / group.length;
-            const base = (af.get(f) ?? 0) / all.length;
-            return `<li><span class="f-name">${esc(f)}</span>
-              <span class="f-track"><span class="f-bar" style="width:${(share / maxShare) * 100}%"></span><span class="f-base" style="left:${Math.min(100, (base / maxShare) * 100)}%" title="全体 ${pct(base, 1)}%"></span></span>
-              <span class="f-val">${Math.round(share * 100)}%</span></li>`;
-          }).join("")}</ul>
-          <p class="note">棒はこの集団でその分野を掲げる議員の割合、縦の線は全体での割合。</p>
-        </section>
+        ${panels}
       </div>
       <section class="panel">
         <div class="list-head">
@@ -319,7 +360,7 @@ function renderApp(root, data) {
           </select></label>
         </div>
         <div class="table-scroll"><table class="members">
-          <thead><tr><th scope="col">名前</th><th scope="col">政党</th><th scope="col">院・選挙区</th><th scope="col" class="num">年齢</th><th scope="col" class="num">当選</th><th scope="col" class="num">発言</th><th scope="col">公約の状況</th></tr></thead>
+          <thead><tr><th scope="col">名前</th><th scope="col">政党</th><th scope="col">院・選挙区</th><th scope="col" class="num">年齢</th><th scope="col" class="num">当選</th><th scope="col" class="num">発言</th><th scope="col">${hasPromises ? "公約の状況" : "前職（目安）"}</th></tr></thead>
           <tbody>${shown.map((m) => {
             const p = data.partyById.get(m.party);
             const c = statusCounts([m]);
@@ -327,8 +368,8 @@ function renderApp(root, data) {
               <th scope="row"><button class="name-link" data-open="${esc(m.id)}">${esc(m.name)}</button></th>
               <td><span class="party" style="--pc:${esc(p?.color)}">${esc(p?.name)}</span></td>
               <td>${esc(m.house.slice(0, 1))}・${esc(m.district)}</td>
-              <td class="num">${age(m)}</td><td class="num">${m.terms}</td><td class="num">${m.activity?.speeches ?? "—"}</td>
-              <td><span class="mini">${STATUS_ORDER.filter((k) => c[k]).map((k) => `<i style="background:var(--st-${k});flex:${c[k]}" title="${STATUS[k]} ${c[k]}件"></i>`).join("")}</span></td>
+              <td class="num">${age(m) ?? "—"}</td><td class="num">${m.terms}</td><td class="num">${m.activity?.speeches ?? "—"}</td>
+              <td>${hasPromises ? `<span class="mini">${STATUS_ORDER.filter((k) => c[k]).map((k) => `<i style="background:var(--st-${k});flex:${c[k]}" title="${STATUS[k]} ${c[k]}件"></i>`).join("")}</span>` : esc(m.career)}</td>
             </tr>`;
           }).join("")}</tbody>
         </table></div>
@@ -351,33 +392,40 @@ function renderApp(root, data) {
     detail.innerHTML = `<div class="sheet" style="--pc:${esc(p?.color)}" role="dialog" aria-modal="true" aria-labelledby="d-name">
       <button class="close" id="close">✕ 分析にもどる</button>
       <section class="hero">
-        <div class="art">${avatar(m.avatar, p?.color)}</div>
+        <div class="art">${m.avatar ? avatar(m.avatar, p?.color) : silhouette(p?.color)}</div>
         <div class="info">
           <div><span class="kana">${esc(m.kana)}</span><h2 class="name" id="d-name">${esc(m.name)}</h2></div>
           <dl class="profile">
             <dt>所属</dt><dd>${esc(m.house)}・${esc(p?.name)}</dd>
             <dt>選挙区</dt><dd>${esc(m.district)}</dd>
-            <dt>当選</dt><dd>${esc(m.terms)}回 <span class="stars">${stars(m.terms)}</span></dd>
-            <dt>年齢・性別</dt><dd>${age(m)}歳・${esc(m.gender)}</dd>
-            <dt>前職</dt><dd>${esc(m.career)}</dd>
+            <dt>当選</dt><dd>${esc(m.terms)}回${m.termsOther ? `（${m.house === "衆議院" ? "参" : "衆"}${m.termsOther}回）` : ""} <span class="stars">${stars(m.terms)}</span></dd>
+            <dt>年齢・性別</dt><dd>${age(m) === null ? "生年不明" : `${age(m)}歳`}・${esc(m.gender)}</dd>
+            <dt>前職</dt><dd>${esc(m.career)}${data.meta.sample ? "" : `<span class="when">（経歴文からの目安）</span>`}</dd>
           </dl>
           <div class="skills" aria-label="力を入れている分野">${(m.fields ?? []).map((f) => `<span class="skill">${esc(f)}</span>`).join("")}</div>
           ${m.catchphrase ? `<p class="serif">「${esc(m.catchphrase.quote)}」<small>${esc(m.catchphrase.source.title)} ${esc(m.catchphrase.source.date)}・<a href="${esc(safeUrl(m.catchphrase.source.url))}" target="_blank" rel="noopener">原文</a></small></p>` : ""}
-          <div>${reviewBadge(m)} ${m.review?.generatedAt ? `<span class="when">下書き ${esc(m.review.generatedAt)}</span>` : ""}</div>
+          ${m.review ? `<div>${reviewBadge(m)} ${m.review.generatedAt ? `<span class="when">下書き ${esc(m.review.generatedAt)}</span>` : ""}</div>` : ""}
+          ${m.profileUrl ? `<p class="when">出典：<a href="${esc(safeUrl(m.profileUrl))}" target="_blank" rel="noopener">${esc(m.house)}の紹介ページ</a>${m.genderSource ? `・性別は${esc(m.genderSource)}` : ""}${m.birthSource ? `・生年は${esc(m.birthSource)}` : ""}</p>` : ""}
         </div>
       </section>
+      ${m.bio ? `<details class="bio"><summary>公式の経歴を読む</summary><p>${esc(m.bio)}</p></details>` : ""}
       <section class="stats" aria-label="ステータス">
-        <div class="stat"><div class="label">公約</div><div class="value">${(m.promises ?? []).length}</div></div>
+        ${(m.promises ?? []).length ? `
+        <div class="stat"><div class="label">公約</div><div class="value">${m.promises.length}</div></div>
         <div class="stat"><div class="label">実現</div><div class="value" style="color:var(--st-achieved)">${c.achieved}</div></div>
-        <div class="stat"><div class="label">進行中</div><div class="value" style="color:var(--st-in_progress)">${c.in_progress}</div></div>
+        <div class="stat"><div class="label">進行中</div><div class="value" style="color:var(--st-in_progress)">${c.in_progress}</div></div>` : `
+        <div class="stat"><div class="label">当選</div><div class="value">${m.terms}</div></div>
+        <div class="stat"><div class="label">年齢</div><div class="value">${age(m) ?? "—"}</div></div>
+        <div class="stat"><div class="label">議員立法</div><div class="value">${(m.achievements ?? []).filter((x) => x.type === "bill").length || "—"}</div></div>`}
         <div class="stat"><div class="label">国会での発言</div><div class="value">${m.activity?.speeches ?? "—"}</div></div>
       </section>
-      ${statusBar(c)}
+      ${(m.promises ?? []).length ? statusBar(c) : ""}
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-tab="quests" aria-selected="${tab === "quests"}">公約クエスト</button>
         <button class="tab" role="tab" data-tab="log" aria-selected="${tab === "log"}">活動ログ</button>
       </div>
       <div ${tab === "quests" ? "" : "hidden"} data-panel="quests">
+        ${promises.length ? "" : `<p class="empty-note">この議員の公約はまだ作成していません。選挙公報と会議録から、出典つきで AI が下書きする予定です（scripts/generate.js）。</p>`}
         <ul class="quests">${promises.map((q) => `
           <li class="quest" style="--sc:var(--st-${esc(q.status)})">
             <header><h3>${esc(q.title)}</h3><span class="status">${esc(STATUS[q.status])}</span></header>
@@ -389,6 +437,7 @@ function renderApp(root, data) {
           </li>`).join("")}</ul>
       </div>
       <div ${tab === "log" ? "" : "hidden"} data-panel="log">
+        ${log.length ? "" : `<p class="empty-note">法案・質問主意書などの活動ログはまだ作成していません。</p>`}
         <ul class="log">${log.map((a) => `
           <li><time datetime="${esc(a.date)}">${esc(a.date)}</time>
             <div class="entry"><span class="type">${esc(TYPE[a.type] ?? a.type)}</span><h3>${esc(a.title)}</h3><p>${esc(a.summary)}</p>${sourceList(a.sources)}</div>
@@ -428,7 +477,7 @@ function renderApp(root, data) {
   root.querySelector(".presets").addEventListener("click", (e) => {
     const b = e.target.closest("[data-preset]");
     if (!b) return;
-    const p = PRESETS[Number(b.dataset.preset)];
+    const p = presets[Number(b.dataset.preset)];
     $("#ax-x").value = p.x; $("#ax-y").value = p.y; $("#ax-color").value = p.color;
     set({ x: p.x, y: p.y, color: p.color, cell: null, limit: 40 });
   });

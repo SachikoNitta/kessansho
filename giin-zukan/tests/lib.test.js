@@ -61,13 +61,13 @@ test("構造化出力のスキーマは全オブジェクトで additionalProper
   walk(EXTRACTION_SCHEMA, "$");
 });
 
-test("同梱のデータは形が正しく、すべての公約と実績に出典がある", () => {
-  const data = JSON.parse(readFileSync(new URL("../data/members.json", import.meta.url)));
+test("サンプルのデータは形が正しく、すべての公約と実績に出典がある", () => {
+  const data = JSON.parse(readFileSync(new URL("../data/sample.json", import.meta.url)));
   assert.deepEqual(validateData(data), []);
 });
 
 test("根拠なしに実現と判定したデータは検証で落ちる", () => {
-  const data = JSON.parse(readFileSync(new URL("../data/members.json", import.meta.url)));
+  const data = JSON.parse(readFileSync(new URL("../data/sample.json", import.meta.url)));
   data.members[0].promises[0].status = "achieved";
   data.members[0].promises[0].evidence = [];
   assert.ok(validateData(data).some((e) => e.includes("根拠の出典が要る")));
@@ -89,7 +89,7 @@ test("1行1人の書き出しは読み戻すと同じデータになる", async 
 });
 
 test("サンプルの集団は衆参の定数どおりで、分析に使う属性がそろっている", () => {
-  const data = JSON.parse(readFileSync(new URL("../data/members.json", import.meta.url)));
+  const data = JSON.parse(readFileSync(new URL("../data/sample.json", import.meta.url)));
   assert.equal(data.members.filter((m) => m.house === "衆議院").length, 465);
   assert.equal(data.members.filter((m) => m.house === "参議院").length, 248);
   for (const m of data.members) assert.ok(m.gender && m.birthYear && m.career && m.region && m.activity, m.id);

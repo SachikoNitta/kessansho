@@ -32,7 +32,7 @@ const data = {
       district: "架空県第3区",
       party: "aozora",
       terms: 2,
-      gender: "女性", birthYear: 1984, career: "地方議員", region: "南関東",
+      gender: "女性", birthYear: 1984, career: "地方議員・首長", region: "南関東",
       activity: { speeches: 64, since: "2024-11-01", source: { title: "国会会議録検索システム", url: "https://example.jp/kokkai/search/kasugai" } },
       avatar: { skin: "#F6D7BD", hair: "#3A2A2F", style: "bob", glasses: false },
       catchphrase: {
@@ -233,5 +233,5 @@ if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);
 }
-await writeFile(join(ROOT, "data", "members.json"), serializeData(data));
-console.log(`data/members.json を書き出しました（${data.members.length} 人）`);
+await writeFile(join(ROOT, "data", "sample.json"), serializeData(data));
+console.log(`data/sample.json を書き出しました（${data.members.length} 人）`);

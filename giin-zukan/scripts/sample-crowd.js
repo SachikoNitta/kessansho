@@ -61,12 +61,12 @@ const CATCH = [
 
 // 政党ごとの傾向（架空）。分析したときに違いが見えるように、少しずつ差をつけている
 const PARTY_TRAITS = {
-  aozora: { share: 0.4, female: 0.13, ageMean: 60, careers: { 官僚: 4, 地方議員: 4, 議員秘書: 3, 民間企業: 2, 弁護士: 1, その他: 1 }, fields: ["経済", "外交・安全保障", "地方の産業", "防災", "税制"], achieve: 0.32, speech: 0.7 },
-  kurashi: { share: 0.2, female: 0.3, ageMean: 55, careers: { 労働組合: 4, 民間企業: 3, 弁護士: 2, 地方議員: 2, メディア: 1 }, fields: ["年金", "子育て", "働き方", "介護", "教育"], achieve: 0.14, speech: 1.3 },
-  midori: { share: 0.13, female: 0.38, ageMean: 52, careers: { "教育・研究": 3, "医師・医療": 3, その他: 2, 地方議員: 2, メディア: 1 }, fields: ["エネルギー", "環境", "防災", "医療", "農林水産"], achieve: 0.12, speech: 1.2 },
-  hikari: { share: 0.12, female: 0.18, ageMean: 50, careers: { 民間企業: 4, 地方議員: 3, 弁護士: 1, メディア: 1, 官僚: 1 }, fields: ["政治改革", "デジタル", "規制改革", "経済", "税制"], achieve: 0.18, speech: 1.1 },
-  shizuku: { share: 0.08, female: 0.27, ageMean: 57, careers: { 地方議員: 4, その他: 2, "教育・研究": 1, "医師・医療": 1, 議員秘書: 1 }, fields: ["介護", "教育", "子育て", "医療", "年金"], achieve: 0.22, speech: 1.0 },
-  independent: { share: 0.07, female: 0.2, ageMean: 58, careers: { 民間企業: 2, 官僚: 2, メディア: 2, 弁護士: 1, 地方議員: 1, その他: 1 }, fields: FIELDS, achieve: 0.1, speech: 0.9 },
+  aozora: { share: 0.4, female: 0.13, ageMean: 60, careers: { 官僚: 4, "地方議員・首長": 4, 議員秘書: 3, 民間企業: 2, 弁護士: 1, その他: 1 }, fields: ["経済", "外交・安全保障", "地方の産業", "防災", "税制"], achieve: 0.32, speech: 0.7 },
+  kurashi: { share: 0.2, female: 0.3, ageMean: 55, careers: { 労働組合: 4, 民間企業: 3, 弁護士: 2, "地方議員・首長": 2, メディア: 1 }, fields: ["年金", "子育て", "働き方", "介護", "教育"], achieve: 0.14, speech: 1.3 },
+  midori: { share: 0.13, female: 0.38, ageMean: 52, careers: { "教育・研究": 3, "医師・医療": 3, その他: 2, "地方議員・首長": 2, メディア: 1 }, fields: ["エネルギー", "環境", "防災", "医療", "農林水産"], achieve: 0.12, speech: 1.2 },
+  hikari: { share: 0.12, female: 0.18, ageMean: 50, careers: { 民間企業: 4, "地方議員・首長": 3, 弁護士: 1, メディア: 1, 官僚: 1 }, fields: ["政治改革", "デジタル", "規制改革", "経済", "税制"], achieve: 0.18, speech: 1.1 },
+  shizuku: { share: 0.08, female: 0.27, ageMean: 57, careers: { "地方議員・首長": 4, その他: 2, "教育・研究": 1, "医師・医療": 1, 議員秘書: 1 }, fields: ["介護", "教育", "子育て", "医療", "年金"], achieve: 0.22, speech: 1.0 },
+  independent: { share: 0.07, female: 0.2, ageMean: 58, careers: { 民間企業: 2, 官僚: 2, メディア: 2, 弁護士: 1, "地方議員・首長": 1, その他: 1 }, fields: FIELDS, achieve: 0.1, speech: 0.9 },
 };
 const REGION_WEIGHTS = { 北海道: 4, 東北: 6, 北関東: 7, 南関東: 9, 東京: 8, 北陸信越: 5, 東海: 9, 近畿: 12, 中国: 5, 四国: 3, 九州: 9 };
 const SKIN = ["#F6D7BD", "#F1CFB3", "#E9C29F", "#D9A980", "#C68E64"];
