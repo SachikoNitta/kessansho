@@ -1,0 +1,16 @@
+{
+  "id": "example-member",
+  "name": "（議員の氏名）",
+  "kana": "（ふりがな）",
+  "house": "衆議院",
+  "district": "（選挙区）",
+  "party": "（parties の id）",
+  "terms": 1,
+  "kokkaiSpeaker": "（会議録上の氏名。省略すると name）",
+  "from": "2024-11-01",
+  "pages": [
+    { "title": "選挙公報（2024年衆院選）", "url": "https://example.jp/koho.html", "date": "2024-10-15" },
+    { "title": "公式サイト 政策ページ", "url": "https://example.jp/policy" }
+  ],
+  "avatar": { "skin": "#F3D2B5", "hair": "#2B2A33", "style": "short", "glasses": false }
+}

@@ -1,0 +1,203 @@
+/* 図鑑：カードを並べた一覧 → タップでステータス画面（ゲームのキャラ詳細のように） */
+:root {
+  --bg: #EAF0FA;
+  --bg-dot: #D6E0F2;
+  --card: #FFFFFF;
+  --ink: #1B2238;
+  --muted: #5B6482;
+  --line: #C9D3EA;
+  --accent: #2F5BEA;
+  --star: #FFB627;
+  --st-achieved: #12936A;
+  --st-in_progress: #2F6FE4;
+  --st-not_started: #8A90A6;
+  --st-stalled: #C9761A;
+  --st-unverifiable: #A0A6BA;
+  --shadow: 0 3px 0 #1B223822;
+  --f-display: "Dela Gothic One", "Hiragino Kaku Gothic StdN", sans-serif;
+  --f-body: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
+  --f-pixel: "DotGothic16", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12172A; --bg-dot: #1C2340; --card: #1B2238; --ink: #ECF0FF; --muted: #A6AECB;
+    --line: #313A5C; --accent: #7C9BFF; --star: #FFC857;
+    --st-achieved: #3CCB98; --st-in_progress: #6F9BFF; --st-not_started: #8F95AD; --st-stalled: #F0A04B; --st-unverifiable: #6F7690;
+    --shadow: 0 3px 0 #00000055; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12172A; --bg-dot: #1C2340; --card: #1B2238; --ink: #ECF0FF; --muted: #A6AECB;
+  --line: #313A5C; --accent: #7C9BFF; --star: #FFC857;
+  --st-achieved: #3CCB98; --st-in_progress: #6F9BFF; --st-not_started: #8F95AD; --st-stalled: #F0A04B; --st-unverifiable: #6F7690;
+  --shadow: 0 3px 0 #00000055; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg) radial-gradient(var(--bg-dot) 1.2px, transparent 1.3px) 0 0 / 18px 18px;
+  color: var(--ink);
+  font: 15px/1.7 var(--f-body);
+}
+a { color: var(--accent); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 56px; }
+
+/* ヘッダー */
+.masthead { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+.logo { margin: 0; font: 400 clamp(28px, 6vw, 44px)/1.1 var(--f-display); letter-spacing: .02em; }
+.logo small { display: block; font: 700 12px/1 var(--f-body); letter-spacing: .25em; color: var(--muted); margin-bottom: 8px; }
+.logo em { font-style: normal; color: var(--accent); }
+.count { font: 16px/1 var(--f-pixel); color: var(--muted); }
+.count b { color: var(--ink); font-size: 22px; font-weight: 400; }
+
+.notice {
+  margin: 16px 0 0; padding: 10px 14px; border: 2px dashed var(--st-stalled); border-radius: 10px;
+  color: var(--ink); background: var(--card); font-size: 13px;
+}
+.notice strong { color: var(--st-stalled); }
+
+/* 絞り込み */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 16px; align-items: center; }
+.filters input[type="search"] {
+  flex: 1 1 220px; min-width: 0; padding: 10px 14px; border: 2px solid var(--line); border-radius: 999px;
+  background: var(--card); color: var(--ink); font: inherit;
+}
+.chip {
+  border: 2px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 14px;
+  cursor: pointer; font-size: 13px; font-weight: 700;
+}
+.chip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--card); }
+
+/* カード一覧 */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 18px; }
+.card {
+  --pc: var(--accent);
+  position: relative; display: flex; flex-direction: column; text-align: left; cursor: pointer;
+  border: 3px solid var(--ink); border-radius: 18px; background: var(--card); padding: 0; overflow: hidden;
+  box-shadow: var(--shadow); transition: transform .15s ease;
+}
+.card:hover { transform: translateY(-3px) rotate(-.4deg); }
+.card .art {
+  position: relative; aspect-ratio: 4 / 3; max-width: 100%;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--pc) 30%, var(--card)), color-mix(in srgb, var(--pc) 70%, var(--card)));
+  border-bottom: 3px solid var(--ink); display: grid; place-items: end center;
+}
+.card .art svg { width: 62%; height: auto; display: block; }
+.card .house {
+  position: absolute; top: 10px; left: 10px; font: 13px/1 var(--f-pixel); background: var(--ink); color: var(--card);
+  padding: 5px 8px; border-radius: 6px;
+}
+.card .terms { position: absolute; top: 8px; right: 10px; color: var(--star); font-size: 16px; letter-spacing: 1px; text-shadow: 0 1px 0 var(--ink); }
+.card .body { padding: 12px 14px 14px; display: grid; gap: 6px; }
+.kana { font-size: 11px; color: var(--muted); letter-spacing: .1em; }
+.name { font: 400 22px/1.15 var(--f-display); margin: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.party { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--ink); }
+.party::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--pc); }
+.quote { margin: 4px 0 0; font-size: 13px; line-height: 1.55; }
+.quote::before { content: "「"; } .quote::after { content: "」"; }
+
+/* 公約の状況バー（カードと詳細で共通） */
+.bar { display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: var(--line); border: 2px solid var(--ink); }
+.bar span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: 0; }
+
+.badge-ai {
+  display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 99px;
+  border: 1.5px solid var(--st-stalled); color: var(--st-stalled);
+}
+.badge-ok { border-color: var(--st-achieved); color: var(--st-achieved); }
+
+.empty { padding: 32px; text-align: center; color: var(--muted); }
+
+/* ステータス画面 */
+.detail[hidden] { display: none; }
+.detail {
+  position: fixed; inset: 0; z-index: 10; overflow-y: auto; background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(4px); padding: env(safe-area-inset-top, 0px) 16px calc(32px + env(safe-area-inset-bottom, 0px));
+}
+.sheet { --pc: var(--accent); max-width: 880px; margin: 16px auto; display: grid; gap: 16px; }
+.close {
+  justify-self: end; border: 3px solid var(--ink); background: var(--card); border-radius: 999px; padding: 6px 16px;
+  font-weight: 700; cursor: pointer; box-shadow: var(--shadow);
+}
+.hero {
+  display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 0;
+  border: 3px solid var(--ink); border-radius: 20px; overflow: hidden; background: var(--card); box-shadow: var(--shadow);
+}
+.hero .art {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--pc) 30%, var(--card)), color-mix(in srgb, var(--pc) 75%, var(--card)));
+  display: grid; place-items: end center; border-right: 3px solid var(--ink); min-height: 220px;
+}
+.hero .art svg { width: 86%; height: auto; }
+.hero .info { padding: 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.hero .name { font-size: clamp(26px, 5vw, 36px); }
+.profile { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; font-size: 13px; }
+.profile dt { color: var(--muted); }
+.profile dd { margin: 0; font-weight: 700; }
+.skills { display: flex; flex-wrap: wrap; gap: 6px; }
+.skill { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; background: color-mix(in srgb, var(--pc) 16%, var(--card)); border: 1.5px solid color-mix(in srgb, var(--pc) 60%, var(--card)); }
+.serif { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--bg); font-size: 15px; font-weight: 700; position: relative; }
+.serif small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.stat { border: 3px solid var(--ink); border-radius: 14px; background: var(--card); padding: 10px 12px; box-shadow: var(--shadow); }
+.stat .label { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .08em; }
+.stat .value { font: 30px/1.1 var(--f-pixel); font-variant-numeric: tabular-nums; }
+
+.tabs { display: flex; gap: 6px; border-bottom: 3px solid var(--ink); }
+.tab {
+  border: 3px solid var(--ink); border-bottom: none; background: var(--bg); border-radius: 12px 12px 0 0;
+  padding: 8px 16px; cursor: pointer; font-weight: 700; margin-bottom: -3px;
+}
+.tab[aria-selected="true"] { background: var(--card); }
+
+.quests, .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.quest {
+  --sc: var(--st-unverifiable);
+  border: 2px solid var(--line); border-left: 8px solid var(--sc); border-radius: 12px; background: var(--card); padding: 12px 14px;
+  display: grid; gap: 6px; min-width: 0;
+}
+.quest header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.quest h3 { margin: 0; font-size: 16px; line-height: 1.4; flex: 1 1 200px; min-width: 0; }
+.status { font: 13px/1 var(--f-pixel); color: var(--card); background: var(--sc); padding: 5px 9px; border-radius: 6px; white-space: nowrap; }
+.quest p { margin: 0; font-size: 14px; }
+.when { font-size: 12px; color: var(--muted); }
+.why { background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.why b { font-size: 11px; color: var(--muted); display: block; }
+
+details.src { font-size: 12px; }
+details.src summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+.src ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 6px; }
+.src q { display: block; color: var(--ink); }
+.src a { word-break: break-all; }
+
+.log li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; }
+.log time { font: 14px/1.6 var(--f-pixel); color: var(--muted); font-variant-numeric: tabular-nums; }
+.log .entry { border-left: 3px solid var(--line); padding-left: 12px; display: grid; gap: 4px; min-width: 0; }
+.log .type { font-size: 11px; font-weight: 700; color: var(--accent); }
+.log h3 { margin: 0; font-size: 15px; }
+.log p { margin: 0; font-size: 14px; }
+
+.howto { font-size: 13px; color: var(--muted); border-top: 2px dashed var(--line); padding-top: 12px; }
+.howto h2 { font: 400 16px/1.3 var(--f-display); color: var(--ink); margin: 0 0 6px; }
+.howto ul { margin: 0; padding-left: 18px; }
+
+.footer { margin-top: 32px; font-size: 12px; color: var(--muted); }
+
+@media (max-width: 640px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero .art { border-right: none; border-bottom: 3px solid var(--ink); min-height: 180px; }
+  .hero .art svg { width: 52%; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .log li { grid-template-columns: 1fr; gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .card:hover { transform: none; }
+}
