@@ -14,6 +14,9 @@
   --line-soft: #D8CFBF;
   --navy: #2F3E5C;
   --red: #8C3B2A;
+  /* 資料の紙：枠線なしで、影だけで机から浮かせる */
+  --float-paper: #FFFDF8;
+  --float-shadow: 0 1px 2px rgba(46, 32, 18, 0.12), 0 4px 12px rgba(46, 32, 18, 0.14);
   --mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
   --hand: "Klee One", "Hiragino Maru Gothic ProN", cursive;
   --italic: "Cormorant Garamond", "Times New Roman", serif;
@@ -133,7 +136,7 @@ button { font: inherit; color: inherit; }
 
 /* 問いの資料：問いの上に、開く操作なしで並べる */
 .q-docs { display: flex; flex-direction: column; gap: 18px; padding: 24px 22px 0 24px; }
-.q-doc { margin: 0 7px 7px 0; }
+.q-doc { margin: 0; }
 
 /* 本文の下に問いを出すとき、問いの上に置く本文 */
 .lead { display: flex; flex-direction: column; gap: 20px; padding: 28px 30px 0; }
@@ -339,9 +342,9 @@ button { font: inherit; color: inherit; }
 .embed { margin: 0; }
 .embed-table, .embed-article {
   padding: 12px 14px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  box-shadow: 2px 2px 0 rgba(46, 32, 18, 0.12);
+  background: var(--float-paper);
+  border-radius: 3px;
+  box-shadow: var(--float-shadow);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -372,7 +375,7 @@ button { font: inherit; color: inherit; }
 .site-badges span { font-size: 12px; font-weight: 700; color: #2450D8; background: #E6ECFF; border-radius: 999px; padding: 3px 9px; }
 /* 手紙・通知書 */
 .letter {
-  background: #FFFDF7; border: 1px solid var(--line); box-shadow: 2px 2px 0 rgba(46, 32, 18, 0.12);
+  background: var(--float-paper); border-radius: 3px; box-shadow: var(--float-shadow);
   padding: 16px 16px 14px; font-family: var(--mincho); font-size: 13px; line-height: 1.8; color: #2A2620;
   display: flex; flex-direction: column; gap: 6px;
 }
@@ -432,9 +435,9 @@ button { font: inherit; color: inherit; }
 .graph {
   margin: 0;
   padding: 12px 14px 10px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  box-shadow: 2px 2px 0 rgba(46, 32, 18, 0.12);
+  background: var(--float-paper);
+  border-radius: 3px;
+  box-shadow: var(--float-shadow);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -486,8 +489,8 @@ button { font: inherit; color: inherit; }
 
 /* 本文に差し込む図（お金の輪） */
 .diagram {
-  margin: 0; padding: 12px 14px 10px; background: var(--card); border: 1px solid var(--line);
-  box-shadow: 2px 2px 0 rgba(46, 32, 18, 0.12); display: flex; flex-direction: column; gap: 6px; font-family: var(--mincho);
+  margin: 0; padding: 12px 14px 10px; background: var(--float-paper); border-radius: 3px;
+  box-shadow: var(--float-shadow); display: flex; flex-direction: column; gap: 6px; font-family: var(--mincho);
 }
 .dia-svg { width: 100%; height: auto; display: block; overflow: visible; }
 .dia-node rect { fill: #FFFDF8; stroke: var(--navy); stroke-width: 1.4; }
@@ -513,9 +516,9 @@ button { font: inherit; color: inherit; }
 .ticker {
   margin: 0;
   padding: 12px 14px 10px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  box-shadow: 2px 2px 0 rgba(46, 32, 18, 0.12);
+  background: var(--float-paper);
+  border-radius: 3px;
+  box-shadow: var(--float-shadow);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -659,8 +662,8 @@ button { font: inherit; color: inherit; }
 /* 資料の縮小版：本物の資料を 420px 幅で描いて縮める。押せるのは札ごと */
 .doc-thumb-paper {
   position: relative; display: block; height: 150px; overflow: hidden;
-  background: #FFFDF8; border-radius: 3px;
-  box-shadow: 0 1px 2px rgba(46, 32, 18, 0.12), 0 4px 12px rgba(46, 32, 18, 0.14);
+  background: var(--float-paper); border-radius: 3px;
+  box-shadow: var(--float-shadow);
 }
 .doc-thumb-paper::after { content: ""; position: absolute; inset: auto 0 0; height: 36px; background: linear-gradient(transparent, #FFFDF8); }
 .doc-thumb-inner {
@@ -682,16 +685,17 @@ button { font: inherit; color: inherit; }
 
 .doc-paper {
   position: relative;
-  background: #FFFDF8;
-  border: 1px solid var(--line);
-  border-top: 4px solid var(--index, var(--line));
+  background: var(--float-paper);
+  border-radius: 3px;
   padding: 14px 14px 16px;
-  margin: 0 7px 7px 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  /* 下に重なっている紙 */
-  box-shadow: 3px 3px 0 -1px #F3EDE0, 3px 3px 0 0 var(--line), 6px 6px 0 -1px #EAE2D1, 6px 6px 0 0 var(--line);
+  box-shadow: var(--float-shadow);
+}
+/* 資料の紙の中では、グラフや手紙の紙をもう一枚重ねない */
+.doc-paper .graph, .doc-paper .letter, .doc-thumb-inner .graph, .doc-thumb-inner .letter {
+  background: transparent; box-shadow: none; padding: 0; border-radius: 0;
 }
 .sheet-body { overflow-y: auto; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
 .sheet-foot { display: flex; justify-content: flex-end; }
