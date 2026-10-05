@@ -20,7 +20,9 @@ import { fileURLToPath } from "node:url";
 import { serializeData, validateData } from "./lib.js";
 import {
   NATIONAL, classifyCareer, normKana, normName, parseBirth, parseShugiinKaiha, parseShugiinList, parseShugiinProfile, regionOf,
+  birthPrefecture, electedBy, electionYears, hometown, ministerialLevel, studiedAbroad, university,
 } from "./roster-lib.js";
+import { billsFrom, parseShugiinQuestionDate, parseShugiinQuestionList, sanQuestions } from "./activity-lib.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CACHE = join(ROOT, ".cache");
@@ -29,8 +31,14 @@ const WITH_SPEECHES = process.argv.includes("--speeches");
 
 const SHU = "https://www.shugiin.go.jp/internet/itdb_annai.nsf/html/statics";
 const SAN_DATA = "https://raw.githubusercontent.com/smartnews-smri/house-of-councillors/main/data";
-const SPEECH_FROM = "2025-10-01";
+// 数える期間は、2026年の衆院選のあとの第221回国会（特別会、2026-02-18召集）から。
+// 衆参とも、いまの議員全員がそろっていた期間にそろえる（それより前は、衆院の新人には機会がなかった）
+const SPEECH_FROM = "2026-02-18";
 const SPEECH_UNTIL = "2026-09-30";
+const COUNT_SESSION = 221;
+// 活動ログには、第219回国会（2025年10月召集）以降を載せる
+const SINCE_SESSION = 219;
+const SESSION_YEAR = { 219: 2025, 220: 2026, 221: 2026, 222: 2026 };
 
 // 両院で略称が違う同じ政党は、ひとつにまとめる
 const MERGE = { 民主: "国民", みら: "みらい", 無: "無所属" };
@@ -109,6 +117,7 @@ async function loadSangiin() {
       kaiha: g["会派"],
       terms: Number(g["当選回数"]),
       termsOther: Number(g["経歴"].normalize("NFKC").match(/衆議院議員(\d+)期/)?.[1] ?? 0),
+      electedYears: String(g["当選年"] ?? "").match(/\d{4}/g)?.map(Number) ?? [],
       birth: parseBirth(g["経歴"]),
       bio: g["経歴"],
       profileUrl: g["議員個人の紹介ページ"],
@@ -119,6 +128,38 @@ async function loadSangiin() {
 }
 
 // Wikidata：衆参の議員だった人の名前・性別・生年月日
+// 親・祖父母に衆参の議員がいる人（Wikidata で確かめられる範囲）
+async function loadDynasty() {
+  const query = `SELECT DISTINCT ?p WHERE {
+    VALUES ?pos { wd:Q17506823 wd:Q14552828 }
+    VALUES ?pos2 { wd:Q17506823 wd:Q14552828 }
+    ?p wdt:P39 ?pos ; (wdt:P22|wdt:P25)/(wdt:P22|wdt:P25)? ?anc .
+    ?anc wdt:P39 ?pos2 .
+  }`;
+  const url = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(query)}`;
+  const json = JSON.parse(await cached(url, { delay: 0 }));
+  return new Set(json.results.bindings.map((b) => b.p.value));
+}
+
+async function loadActivity() {
+  const raw = (repo, file) => cached(`https://raw.githubusercontent.com/smartnews-smri/${repo}/main/data/${file}`);
+  const bills = billsFrom(JSON.parse(await raw("house-of-representatives", "gian.json")), JSON.parse(await raw("house-of-councillors", "gian.json")), SINCE_SESSION);
+  const questions = sanQuestions(JSON.parse(await raw("house-of-councillors", "syuisyo.json")), SINCE_SESSION);
+  for (let session = SINCE_SESSION; ; session++) {
+    const url = `https://www.shugiin.go.jp/internet/itdb_shitsumon.nsf/html/shitsumon/kaiji${session}_l.htm`;
+    let html;
+    try { html = await cached(url, { encoding: "shift_jis" }); } catch { break; }
+    for (const q of parseShugiinQuestionList(html, url)) {
+      q.date = parseShugiinQuestionDate(await cached(q.keikaUrl, { encoding: "shift_jis" })) ?? String(SESSION_YEAR[session] ?? "");
+      q.url = q.keikaUrl;
+      q.session = session;
+      questions.push(q);
+    }
+  }
+  console.log(`議員立法 ${bills.length} 件・質問主意書 ${questions.length} 件（第${SINCE_SESSION}回国会以降。数えるのは第${COUNT_SESSION}回から）`);
+  return { bills, questions };
+}
+
 async function loadWikidata() {
   const query = `SELECT ?p ?name ?kana ?gender ?birth WHERE {
     VALUES ?pos { wd:Q17506823 wd:Q14552828 }
@@ -157,6 +198,8 @@ async function main() {
   const shu = await loadShugiin();
   const san = await loadSangiin();
   const wiki = await loadWikidata();
+  const dynasty = await loadDynasty();
+  const activity = await loadActivity();
   const kaiha = [...shu.kaiha, ...san.kaiha];
   const members = [...shu.members, ...san.members];
 
@@ -201,6 +244,47 @@ async function main() {
     console.log(`  ${k.house} ${k.abbr.padEnd(4, "　")} ${k.women} / ${women} / ${unknown}${ok ? "" : "  ← 差あり"}`);
   }
 
+  // 経歴の文と公開データから読む切り口
+  for (const m of members) {
+    const years = m.house === "衆議院" ? electionYears(m.bio) : m.electedYears;
+    m.firstElected = years.length ? Math.min(...years) : null;
+    m.electedBy = electedBy(m.house, m.district);
+    m.ministerial = ministerialLevel(m.bio);
+    m.university = university(m.bio);
+    m.studiedAbroad = studiedAbroad(m.bio);
+    m.birthPref = birthPrefecture(m.bio);
+    m.hometown = hometown(m.house, m.district, m.birthPref);
+    m.dynasty = !m.wikidata ? "照合できず" : dynasty.has(m.wikidata) ? "親・祖父母に国会議員" : "Wikidataでは見つからない";
+
+    const key = normName(m.name);
+    const bills = activity.bills.filter((b) => b.house === m.house && b.sponsors.includes(key));
+    const questions = activity.questions.filter((q) => q.house === m.house && q.submitters.includes(key));
+    const stamp = (d, session) => d || String(SESSION_YEAR[session] ?? SESSION_YEAR[SINCE_SESSION]);
+    m.achievements = [
+      ...bills.map((b) => ({
+        type: "bill",
+        date: stamp(b.date, b.session),
+        title: b.title,
+        summary: b.lead === key ? `${b.kind}の筆頭提出者として提出した。` : `${b.kind}の共同提出者（${b.sponsors.length}人）に名を連ねた。`,
+        sources: [{ title: `${b.house} 議案経過（${b.kind}）`, url: b.url, date: b.date ?? "", quote: b.title }],
+      })),
+      ...questions.map((q) => ({
+        type: "written_question",
+        date: stamp(q.date),
+        title: q.title,
+        summary: q.submitters.length > 1 ? `ほか${q.submitters.length - 1}人と連名で提出した。` : "政府に文書で質問し、答弁書を求めた。",
+        sources: [{ title: `${q.house} 質問主意書`, url: q.url, date: q.date ?? "", quote: q.title }],
+      })),
+    ].sort((a, b) => b.date.localeCompare(a.date)).map((a, i) => ({ id: `a${i + 1}`, ...a }));
+    const counted = (x) => x.session >= COUNT_SESSION;
+    m.stats = {
+      billsLead: bills.filter((b) => counted(b) && b.lead === key).length,
+      billsCosponsored: bills.filter((b) => counted(b) && b.lead !== key).length,
+      questions: questions.filter(counted).length,
+      since: `第${COUNT_SESSION}回国会（${SPEECH_FROM}〜）`,
+    };
+  }
+
   if (WITH_SPEECHES) {
     console.log(`発言回数：${SPEECH_FROM}〜${SPEECH_UNTIL} を会議録 API で数えます（1人1秒ほど）`);
     for (const [i, m] of members.entries()) {
@@ -239,13 +323,16 @@ async function main() {
         { title: "衆議院 議員一覧・会派名及び会派別所属議員数・議員の紹介ページ", url: `${SHU}/syu/1giin.htm` },
         { title: "スマートニュース メディア研究所「国会議案データベース：参議院」（参議院ウェブサイトを整理した公開データ、MIT ライセンス）", url: "https://github.com/smartnews-smri/house-of-councillors" },
         { title: "Wikidata（性別・生年月日の照合）", url: "https://www.wikidata.org/" },
+        { title: "スマートニュース メディア研究所「国会議案データベース：衆議院」（議員立法の提出者、MIT ライセンス）", url: "https://github.com/smartnews-smri/house-of-representatives" },
+        { title: "衆議院 質問主意書・答弁書一覧", url: "https://www.shugiin.go.jp/internet/itdb_shitsumon.nsf/html/shitsumon/menu_m.htm" },
+        { title: "Wikidata（親・祖父母に衆参の議員がいるか）", url: "https://www.wikidata.org/" },
         ...(WITH_SPEECHES ? [{ title: `国立国会図書館 国会会議録検索システム（発言回数 ${SPEECH_FROM}〜${SPEECH_UNTIL}）`, url: "https://kokkai.ndl.go.jp/" }] : []),
       ],
       asOf: { 衆議院: shu.asOf, 参議院: san.asOf },
     },
     parties: partyList,
     members: members
-      .map(({ kaiha: k, ...m }) => ({
+      .map(({ kaiha: k, electedYears, ...m }) => ({
         ...m,
         party: partyKey(k),
         birthYear: m.birth ? Number(m.birth.slice(0, 4)) : null,
@@ -253,7 +340,6 @@ async function main() {
         region: regionOf(m.house, m.district) ?? NATIONAL,
         fields: [],
         promises: [],
-        achievements: [],
         catchphrase: null,
         avatar: null,
         review: null,

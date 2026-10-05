@@ -105,62 +105,92 @@ function buildAxes(data) {
   const hasPromises = data.members.some((m) => (m.promises ?? []).length);
   const hasAchievements = data.members.some((m) => (m.achievements ?? []).length);
   const hasActivity = data.members.some((m) => m.activity);
+  const has = (key) => data.members.some((m) => m[key] !== undefined && m[key] !== null);
+  const hasStats = has("stats");
+  // 出身大学は人数の多い6校＋その他＋記載なし（色分けできる8つまで）
+  const uniCount = new Map();
+  for (const m of data.members) if (m.university) uniCount.set(m.university, (uniCount.get(m.university) ?? 0) + 1);
+  const topUni = [...uniCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([u]) => u);
+  const topUniSet = new Set(topUni);
+  const nowYear = ay;
 
+  // group は軸を選ぶ欄の見出し
   const axes = [
-    { id: "none", label: "まとめない", kind: "cat", values: ["全員"], get: () => "全員" },
-    { id: "house", label: "院", kind: "cat", values: ["衆議院", "参議院"], get: (m) => m.house },
+    { id: "none", group: "基本", label: "まとめない", kind: "cat", values: ["全員"], get: () => "全員" },
+    { id: "house", group: "基本", label: "院", kind: "cat", values: ["衆議院", "参議院"], get: (m) => m.house },
     top
-      ? { id: "party", label: "政党（上位7＋その他）", kind: "cat", values: [...top, OTHER], get: (m) => (top.has(partyName(m)) ? partyName(m) : OTHER) }
-      : { id: "party", label: "政党", kind: "cat", values: data.parties.map((p) => p.name), get: partyName },
-    top && { id: "party_all", label: "政党（すべて）", kind: "cat", values: data.parties.map((p) => p.name), get: partyName },
-    { id: "gender", label: "性別", kind: "cat", values: ["男性", "女性", "その他・非公表", "照合できず"], get: (m) => m.gender },
-    { id: "age", label: "年代", kind: "ord", values: ["30代以下", "40代", "50代", "60代", "70代以上", "生年不明"], get: (m) => (age(m) === null ? "生年不明" : band(age(m), [39, 49, 59, 69], ["30代以下", "40代", "50代", "60代", "70代以上"])) },
-    { id: "terms", label: "当選回数", kind: "ord", values: ["1回", "2〜3回", "4〜6回", "7回以上"], get: (m) => band(m.terms, [1, 3, 6], ["1回", "2〜3回", "4〜6回", "7回以上"]) },
-    { id: "career", label: data.meta.sample ? "前職" : "前職（経歴文からの目安）", kind: "cat", values: CAREERS, get: (m) => m.career },
-    { id: "region", label: "地域", kind: "cat", values: REGIONS, get: (m) => m.region },
-    hasPromises && { id: "field", label: "一番の得意分野", kind: "cat", values: [...new Set(data.members.map((m) => m.fields?.[0]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja")), get: (m) => m.fields?.[0] ?? "—" },
-    hasPromises && { id: "achieve", label: "公約の実現割合（AI判定）", kind: "ord", values: ["実現なし", "3割未満", "3〜6割", "6割以上"], get: (m) => { const s = achievedShare(m); return s <= 0 ? "実現なし" : band(s, [0.299, 0.6], ["3割未満", "3〜6割", "6割以上"]); } },
-    hasActivity && { id: "speeches", label: data.meta.sample ? "国会での発言回数" : "国会での発言回数（答弁・議事進行も含む）", kind: "ord", values: ["0回", "1〜20回", "21〜50回", "51〜100回", "101回以上"], get: (m) => band(m.activity?.speeches ?? 0, [0, 20, 50, 100], ["0回", "1〜20回", "21〜50回", "51〜100回", "101回以上"]) },
-    hasAchievements && { id: "bills", label: "議員立法の提出", kind: "ord", values: ["なし", "1件", "2件以上"], get: (m) => band(bills(m), [0, 1], ["なし", "1件", "2件以上"]) },
+      ? { id: "party", group: "基本", label: "政党（上位7＋その他）", kind: "cat", values: [...top, OTHER], get: (m) => (top.has(partyName(m)) ? partyName(m) : OTHER) }
+      : { id: "party", group: "基本", label: "政党", kind: "cat", values: data.parties.map((p) => p.name), get: partyName },
+    top && { id: "party_all", group: "基本", label: "政党（すべて）", kind: "cat", values: data.parties.map((p) => p.name), get: partyName },
+    { id: "gender", group: "基本", label: "性別", kind: "cat", values: ["男性", "女性", "その他・非公表", "照合できず"], get: (m) => m.gender },
+    { id: "age", group: "基本", label: "年代", kind: "ord", values: ["30代以下", "40代", "50代", "60代", "70代以上", "生年不明"], get: (m) => (age(m) === null ? "生年不明" : band(age(m), [39, 49, 59, 69], ["30代以下", "40代", "50代", "60代", "70代以上"])) },
+    { id: "terms", group: "経歴", label: "当選回数", kind: "ord", values: ["1回", "2〜3回", "4〜6回", "7回以上"], get: (m) => band(m.terms, [1, 3, 6], ["1回", "2〜3回", "4〜6回", "7回以上"]) },
+    { id: "career", group: "経歴", label: data.meta.sample ? "前職" : "前職（経歴文からの目安）", kind: "cat", values: CAREERS, get: (m) => m.career },
+    { id: "region", group: "基本", label: "地域", kind: "cat", values: REGIONS, get: (m) => m.region },
+    hasPromises && { id: "field", group: "公約", label: "一番の得意分野", kind: "cat", values: [...new Set(data.members.map((m) => m.fields?.[0]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja")), get: (m) => m.fields?.[0] ?? "—" },
+    hasPromises && { id: "achieve", group: "公約", label: "公約の実現割合（AI判定）", kind: "ord", values: ["実現なし", "3割未満", "3〜6割", "6割以上"], get: (m) => { const s = achievedShare(m); return s <= 0 ? "実現なし" : band(s, [0.299, 0.6], ["3割未満", "3〜6割", "6割以上"]); } },
+    hasActivity && { id: "speeches", group: "国会での活動", label: data.meta.sample ? "国会での発言回数" : "国会での発言回数（答弁・議事進行も含む）", kind: "ord", values: ["0回", "1〜20回", "21〜50回", "51〜100回", "101回以上"], get: (m) => band(m.activity?.speeches ?? 0, [0, 20, 50, 100], ["0回", "1〜20回", "21〜50回", "51〜100回", "101回以上"]) },
+    hasStats
+      ? { id: "bills", group: "国会での活動", label: "議員立法（筆頭提出者として）", kind: "ord", values: ["0件", "1件", "2件以上"], get: (m) => band(m.stats.billsLead, [0, 1], ["0件", "1件", "2件以上"]) }
+      : hasAchievements && { id: "bills", group: "国会での活動", label: "議員立法の提出", kind: "ord", values: ["なし", "1件", "2件以上"], get: (m) => band(bills(m), [0, 1], ["なし", "1件", "2件以上"]) },
+    hasStats && { id: "cosponsor", group: "国会での活動", label: "議員立法（共同提出者として・衆院）", kind: "ord", values: ["0件", "1件", "2件以上"], get: (m) => band(m.stats.billsCosponsored, [0, 1], ["0件", "1件", "2件以上"]) },
+    hasStats && { id: "questions", group: "国会での活動", label: "質問主意書の提出", kind: "ord", values: ["0件", "1〜2件", "3〜9件", "10件以上"], get: (m) => band(m.stats.questions, [0, 2, 9], ["0件", "1〜2件", "3〜9件", "10件以上"]) },
+    has("electedBy") && { id: "electedBy", group: "経歴", label: "選ばれ方", kind: "cat", values: ["衆・小選挙区", "衆・比例代表", "参・選挙区", "参・比例代表"], get: (m) => m.electedBy },
+    has("firstElected") && { id: "tenure", group: "経歴", label: "議員歴（初当選から）", kind: "ord", values: ["1年未満", "1〜5年", "6〜10年", "11〜20年", "21年以上", "初当選の年が不明"], get: (m) => (m.firstElected ? band(nowYear - m.firstElected, [0, 5, 10, 20], ["1年未満", "1〜5年", "6〜10年", "11〜20年", "21年以上"]) : "初当選の年が不明") },
+    has("ministerial") && { id: "ministerial", group: "経歴", label: "大臣・副大臣の経験（経歴文から）", kind: "ord", values: ["経歴に記載なし", "副大臣・政務官の経験あり", "大臣の経験あり"], get: (m) => m.ministerial },
+    has("dynasty") && { id: "dynasty", group: "経歴", label: "親・祖父母に国会議員（Wikidataで確認できた人）", kind: "cat", values: ["親・祖父母に国会議員", "Wikidataでは見つからない", "照合できず"], get: (m) => m.dynasty },
+    has("university") && { id: "university", group: "学び", label: "出身大学（上位6校）", kind: "cat", values: [...topUni, "その他の大学", "大学の記載なし"], get: (m) => (!m.university ? "大学の記載なし" : topUniSet.has(m.university) ? m.university : "その他の大学") },
+    has("studiedAbroad") && { id: "abroad", group: "学び", label: "海外で学んだ経歴", kind: "cat", values: ["あり", "経歴に記載なし"], get: (m) => (m.studiedAbroad ? "あり" : "経歴に記載なし") },
+    has("hometown") && { id: "hometown", group: "基本", label: "地元生まれか（選挙区・比例ブロック）", kind: "cat", values: ["地元（同じ都道府県・ブロック）生まれ", "ほかの地域の生まれ", "海外生まれ", "出生地の記載なし", "対象外（参院比例）"], get: (m) => m.hometown },
   ].filter(Boolean);
-  return { axes, byId: new Map(axes.map((a) => [a.id, a])), age, hasPromises };
+  return { axes, byId: new Map(axes.map((a) => [a.id, a])), age, hasPromises, hasStats };
 }
 
 // 色に使える軸は区分が8つまで（それより多い色は見分けられない）
 const colorable = (axis) => axis.values.length <= 8;
 
+// わからない人・書かれていない人は、どの区分の色とも紛れない灰色
+const GRAY = /不明|照合できず|その他の会派|記載なし|見つからない|対象外/;
+
 function colorOf(axis, value) {
-  const i = axis.values.indexOf(value);
   if (axis.id === "none") return "var(--s1)";
-  // わからない人は、どの区分の色とも紛れない灰色
-  if (/不明|照合できず|その他の会派/.test(value)) return "var(--st-not_started)";
+  if (GRAY.test(value)) return "var(--st-not_started)";
   if (axis.kind === "ord") {
-    const steps = axis.values.filter((v) => !/不明/.test(v)).length;
-    const q = steps === 1 ? 5 : Math.round(1 + (i / (steps - 1)) * 4); // q1〜q5 に割り当てる
+    const known = axis.values.filter((v) => !GRAY.test(v));
+    const i = known.indexOf(value);
+    const q = known.length === 1 ? 5 : Math.round(1 + (i / (known.length - 1)) * 4); // q1〜q5 に割り当てる
     return `var(--q${q})`;
   }
-  return `var(--s${i + 1})`;
+  const known = axis.values.filter((v) => !GRAY.test(v));
+  return `var(--s${known.indexOf(value) + 1})`;
 }
 
 const PRESETS = [
   { label: "政党ごとの女性の割合", x: "party_all", y: "none", color: "gender" },
+  { label: "親・祖父母も議員？", x: "party", y: "none", color: "dynasty" },
+  { label: "大臣になる人の議員歴", x: "tenure", y: "none", color: "ministerial" },
+  { label: "出身大学と政党", x: "university", y: "none", color: "party" },
+  { label: "質問主意書を出すのは誰", x: "party_all", y: "questions", color: "electedBy" },
+  { label: "議員歴と発言の多さ", x: "tenure", y: "speeches", color: "party" },
+  { label: "地元生まれは何割", x: "electedBy", y: "none", color: "hometown" },
   { label: "政党ごとの年代", x: "party", y: "age", color: "gender" },
-  { label: "当選回数と発言の多さ", x: "terms", y: "speeches", color: "party" },
   { label: "前職と政党", x: "career", y: "none", color: "party" },
   { label: "年代と公約の実現", x: "age", y: "achieve", color: "house" },
-  { label: "地域ごとの政党", x: "region", y: "house", color: "party" },
 ];
 
 // ---- 画面 -----------------------------------------------------------------
 function renderApp(root, data) {
   data.partyById = new Map(data.parties.map((p) => [p.id, p]));
-  const { axes, byId, age, hasPromises } = buildAxes(data);
+  const { axes, byId, age, hasPromises, hasStats } = buildAxes(data);
   // 使えない軸を含む問いは出さない。「すべての政党」がない（政党が8つ以下）ときは政党の軸で代わりにする
   const presets = PRESETS.map((p) => ({ ...p, x: byId.has(p.x) ? p.x : p.x.replace("_all", "") }))
     .filter((p) => [p.x, p.y, p.color].every((id) => byId.has(id)));
   const state = { x: presets[0]?.x ?? "party", y: "none", color: "gender", house: "", q: "", cell: null, sort: "kana", limit: 40 };
 
-  const axisOptions = (list, current) => list.map((a) => `<option value="${a.id}" ${a.id === current ? "selected" : ""}>${esc(a.label)}</option>`).join("");
+  const axisOptions = (list, current) => {
+    const groups = [...new Set(list.map((a) => a.group))];
+    return groups.map((g) => `<optgroup label="${esc(g)}">${list.filter((a) => a.group === g).map((a) => `<option value="${a.id}" ${a.id === current ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</optgroup>`).join("");
+  };
 
   root.innerHTML = `
     <header class="masthead">
@@ -192,7 +222,7 @@ function renderApp(root, data) {
     <section class="board" aria-label="集団の地図">
       <div class="legend-row" id="legend"></div>
       <div class="matrix-scroll"><div class="matrix" id="matrix"></div></div>
-      <p class="hint">マスを選ぶと、その集団のプロフィールが下に出ます。点にふれると名前、選ぶとその議員のステータス画面が開きます。${data.meta.sample ? "" : "発言回数は2025年10月〜2026年9月の会議録の件数で、大臣の答弁や委員長の議事進行も1件に数えます。最近初当選した議員は期間が短くなります。"}</p>
+      <p class="hint">マスを選ぶと、その集団のプロフィールが下に出ます。点にふれると名前、選ぶとその議員のステータス画面が開きます。${data.meta.sample ? "" : `発言回数・議員立法・質問主意書は、いまの議員がそろった${esc(data.members.find((m) => m.stats)?.stats.since ?? "")}以降の分を数えています。発言回数は大臣の答弁や委員長の議事進行も1件に数えます。「経歴に記載なし」「見つからない」は、無いと確かめたわけではありません。`}</p>
     </section>
 
     <section class="group" id="group" aria-live="polite"></section>
@@ -287,6 +317,10 @@ function renderApp(root, data) {
         female: pct(ms.filter((m) => m.gender === "女性").length, ms.length),
         terms: ms.reduce((s, m) => s + m.terms, 0) / n,
         speeches: sp.length ? sp[Math.floor(sp.length / 2)] : 0,
+        minister: pct(ms.filter((m) => m.ministerial === "大臣の経験あり").length, ms.length),
+        dynasty: pct(ms.filter((m) => m.dynasty === "親・祖父母に国会議員").length, ms.length),
+        bills: ms.reduce((s, m) => s + (m.stats?.billsLead ?? 0), 0),
+        questions: ms.reduce((s, m) => s + (m.stats?.questions ?? 0), 0),
       };
     };
     const g = stat(group);
@@ -323,7 +357,9 @@ function renderApp(root, data) {
         </section>
         ${shareList("よく掲げる分野", (m) => m.fields ?? [], `棒はこの集団でその分野を掲げる議員の割合。${baseNote}`)}`
       : `${shareList("前職（経歴文からの目安）", (m) => [m.career], `議員になる前の主な職業を、公式の経歴の文から機械的に分類したもの。${baseNote}`)}
-        ${shareList("政党", (m) => [data.partyById.get(m.party)?.name], baseNote)}`;
+        ${shareList("出身大学", (m) => [m.university ?? "大学の記載なし"], `経歴の文に最初に出てくる大学。${baseNote}`)}
+        ${shareList("政党", (m) => [data.partyById.get(m.party)?.name], baseNote)}
+        ${shareList("選ばれ方", (m) => [m.electedBy].filter(Boolean), baseNote)}`;
 
     const sorters = {
       kana: (p, q) => p.kana.localeCompare(q.kana, "ja"),
@@ -345,6 +381,11 @@ function renderApp(root, data) {
         ${kpi("女性の割合", `${g.female}<small>%</small>`, `全体 ${a.female}%`)}
         ${kpi("平均当選回数", `${fmt(g.terms, 1)}<small>回</small>`, `全体 ${fmt(a.terms, 1)}回`)}
         ${kpi("発言回数（中央値）", `${g.speeches}<small>回</small>`, `全体 ${a.speeches}回`)}
+        ${hasStats ? `
+        ${kpi("大臣経験のある人", `${g.minister}<small>%</small>`, `全体 ${a.minister}%`)}
+        ${kpi("親・祖父母に国会議員", `${g.dynasty}<small>%</small>`, `全体 ${a.dynasty}%（Wikidataで確認できた人）`)}
+        ${kpi("議員立法（筆頭）", `${g.bills}<small>件</small>`, `全体 ${a.bills}件`)}
+        ${kpi("質問主意書", `${g.questions}<small>件</small>`, `全体 ${a.questions}件`)}` : ""}
       </div>
       <div class="group-grid">
         ${panels}
@@ -401,6 +442,11 @@ function renderApp(root, data) {
             <dt>当選</dt><dd>${esc(m.terms)}回${m.termsOther ? `（${m.house === "衆議院" ? "参" : "衆"}${m.termsOther}回）` : ""} <span class="stars">${stars(m.terms)}</span></dd>
             <dt>年齢・性別</dt><dd>${age(m) === null ? "生年不明" : `${age(m)}歳`}・${esc(m.gender)}</dd>
             <dt>前職</dt><dd>${esc(m.career)}${data.meta.sample ? "" : `<span class="when">（経歴文からの目安）</span>`}</dd>
+            ${m.electedBy ? `<dt>選ばれ方</dt><dd>${esc(m.electedBy)}${m.firstElected ? `・初当選 ${m.firstElected}年` : ""}</dd>` : ""}
+            ${m.ministerial ? `<dt>政府の役職</dt><dd>${esc(m.ministerial)}</dd>` : ""}
+            ${m.electedBy ? `<dt>学び</dt><dd>${esc(m.university ?? "大学の記載なし")}${m.studiedAbroad ? "・海外で学んだ経歴あり" : ""}</dd>` : ""}
+            ${m.hometown ? `<dt>生まれ</dt><dd>${esc(m.birthPref ?? "—")}（${esc(m.hometown)}）</dd>` : ""}
+            ${m.dynasty === "親・祖父母に国会議員" ? `<dt>家族</dt><dd>親・祖父母に国会議員<span class="when">（${m.wikidata ? `<a href="${esc(safeUrl(m.wikidata))}" target="_blank" rel="noopener">Wikidata</a>` : "Wikidata"}）</span></dd>` : ""}
           </dl>
           <div class="skills" aria-label="力を入れている分野">${(m.fields ?? []).map((f) => `<span class="skill">${esc(f)}</span>`).join("")}</div>
           ${m.catchphrase ? `<p class="serif">「${esc(m.catchphrase.quote)}」<small>${esc(m.catchphrase.source.title)} ${esc(m.catchphrase.source.date)}・<a href="${esc(safeUrl(m.catchphrase.source.url))}" target="_blank" rel="noopener">原文</a></small></p>` : ""}
@@ -416,7 +462,7 @@ function renderApp(root, data) {
         <div class="stat"><div class="label">進行中</div><div class="value" style="color:var(--st-in_progress)">${c.in_progress}</div></div>` : `
         <div class="stat"><div class="label">当選</div><div class="value">${m.terms}</div></div>
         <div class="stat"><div class="label">年齢</div><div class="value">${age(m) ?? "—"}</div></div>
-        <div class="stat"><div class="label">議員立法</div><div class="value">${(m.achievements ?? []).filter((x) => x.type === "bill").length || "—"}</div></div>`}
+        <div class="stat"><div class="label">${m.stats ? "議員立法・質問主意書" : "議員立法"}</div><div class="value">${m.stats ? `${m.stats.billsLead + m.stats.billsCosponsored}・${m.stats.questions}` : (m.achievements ?? []).filter((x) => x.type === "bill").length || "—"}</div></div>`}
         <div class="stat"><div class="label">国会での発言</div><div class="value">${m.activity?.speeches ?? "—"}</div></div>
       </section>
       ${(m.promises ?? []).length ? statusBar(c) : ""}
@@ -437,7 +483,7 @@ function renderApp(root, data) {
           </li>`).join("")}</ul>
       </div>
       <div ${tab === "log" ? "" : "hidden"} data-panel="log">
-        ${log.length ? "" : `<p class="empty-note">法案・質問主意書などの活動ログはまだ作成していません。</p>`}
+        ${log.length ? "" : `<p class="empty-note">${m.stats ? "第219回国会（2025年10月）以降、この議員が提出した議員立法・質問主意書は見つかりませんでした。" : "法案・質問主意書などの活動ログはまだ作成していません。"}</p>`}
         <ul class="log">${log.map((a) => `
           <li><time datetime="${esc(a.date)}">${esc(a.date)}</time>
             <div class="entry"><span class="type">${esc(TYPE[a.type] ?? a.type)}</span><h3>${esc(a.title)}</h3><p>${esc(a.summary)}</p>${sourceList(a.sources)}</div>

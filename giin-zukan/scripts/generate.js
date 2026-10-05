@@ -145,7 +145,10 @@ async function main() {
     catchphrase: verified.catchphrase,
     fields: verified.fields,
     promises: verified.promises,
-    achievements: verified.achievements,
+    // 公開データから取り込んだ活動ログは残し、AI の下書きを足す
+    achievements: [...(existing?.achievements ?? []).filter((x) => !x.ai), ...verified.achievements]
+      .sort((x, y) => y.date.localeCompare(x.date))
+      .map((x, i) => ({ ...x, id: `a${i + 1}` })),
     review: { reviewed: false, generatedAt: new Date().toISOString().slice(0, 10), model, sourceCount: docs.length },
   });
 

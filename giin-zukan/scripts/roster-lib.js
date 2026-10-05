@@ -140,3 +140,83 @@ export function parseShugiinKaiha(html) {
   }
   return out;
 }
+
+// ---- 経歴の文から読む切り口（どれも「経歴に書かれている範囲」の目安） ----
+
+// 衆議院議員総選挙・参議院議員通常選挙の回次 → 年
+export const SHU_ELECTIONS = { 30: 1963, 31: 1967, 32: 1969, 33: 1972, 34: 1976, 35: 1979, 36: 1980, 37: 1983, 38: 1986, 39: 1990, 40: 1993, 41: 1996, 42: 2000, 43: 2003, 44: 2005, 45: 2009, 46: 2012, 47: 2014, 48: 2017, 49: 2021, 50: 2024, 51: 2026 };
+export const SAN_ELECTIONS = { 10: 1974, 11: 1977, 12: 1980, 13: 1983, 14: 1986, 15: 1989, 16: 1992, 17: 1995, 18: 1998, 19: 2001, 20: 2004, 21: 2007, 22: 2010, 23: 2013, 24: 2016, 25: 2019, 26: 2022, 27: 2025 };
+
+// 衆議院の紹介ページの末尾「当選十四回（38 39 … 51）参二回（24 26）」から当選した年を読む
+export function electionYears(bio) {
+  const t = String(bio).normalize("NFKC");
+  const years = [];
+  // 「48繰49」「43補44」のように繰上当選・補欠選挙の印が付くこともある
+  const shu = t.match(/当選[〇一二三四五六七八九十\d]+回\(([^)]+)\)/);
+  const san = t.match(/参[〇一二三四五六七八九十\d]+回\(([^)]+)\)/);
+  for (const n of shu?.[1].match(/\d+/g) ?? []) if (SHU_ELECTIONS[n]) years.push(SHU_ELECTIONS[n]);
+  for (const n of san?.[1].match(/\d+/g) ?? []) if (SAN_ELECTIONS[n]) years.push(SAN_ELECTIONS[n]);
+  return years.sort((a, b) => a - b);
+}
+
+export function electedBy(house, district) {
+  const d = String(district).normalize("NFKC");
+  if (house === "衆議院") return /^\(比\)/.test(d) ? "衆・比例代表" : "衆・小選挙区";
+  return /^比例/.test(d) ? "参・比例代表" : "参・選挙区";
+}
+
+// 大臣（国務大臣・総理）の経験。副大臣・大臣政務官・政務次官は一段下として分ける
+export function ministerialLevel(bio) {
+  const t = String(bio).normalize("NFKC");
+  for (const m of t.matchAll(/大臣/g)) {
+    const before = t[m.index - 1];
+    const after = t.slice(m.index + 2, m.index + 5);
+    if (before === "副" || /^(政務官|補佐官|秘書官|官)/.test(after)) continue;
+    return "大臣の経験あり";
+  }
+  if (/副大臣|大臣政務官|政務次官/.test(t)) return "副大臣・政務官の経験あり";
+  return "経歴に記載なし";
+}
+
+// 最初に出てくる「〇〇大学」（大学院・附属校は除く）。「東大」「法政大卒」のような略し方も読む
+const SHORT = { 東大: "東京大学", 京大: "京都大学", 早大: "早稲田大学", 慶大: "慶應義塾大学", 阪大: "大阪大学", 一橋大: "一橋大学", 東北大: "東北大学", 九大: "九州大学", 名大: "名古屋大学", 北大: "北海道大学", 日大: "日本大学", 明大: "明治大学", 中大: "中央大学", 法大: "法政大学", 立大: "立教大学", 上智大: "上智大学", 同大: "同志社大学", 立命大: "立命館大学", 関大: "関西大学", 学大: null };
+export function university(bio) {
+  const t = String(bio).normalize("NFKC").replace(/慶応/g, "慶應");
+  const trim = (s) => s.replace(/^.*(年|月|日(?!本)|[、。をにてでがはも・])/, "").replace(/^(国立|私立|県立|都立|市立)/, "");
+  const full = [...t.matchAll(/([一-龥ぁ-んァ-ヶー・]+?大学)(?!院|附属|付属|校)/g)].map((m) => ({ i: m.index, name: m[1].endsWith("お茶の水女子大学") ? "お茶の水女子大学" : trim(m[1]) })).filter((x) => x.name.length >= 3);
+  const short = [...t.matchAll(/([一-龥]{1,6}?大)(?=[一-龥]{0,4}(学部|卒|中退))/g)].map((m) => {
+    const k = trim(m[1]);
+    return { i: m.index, name: k in SHORT ? SHORT[k] : `${k}学` };
+  }).filter((x) => x.name && x.name.length >= 3 && !/大学$/.test(x.name) === false);
+  const first = [...full, ...short].sort((a, b) => a.i - b.i)[0];
+  return first?.name ?? null;
+}
+
+export function studiedAbroad(bio) {
+  return /留学|ハーバード|スタンフォード|コロンビア大学|ペンシルベニア|ジョージタウン|オックスフォード|ケンブリッジ|ロンドン大学|ロンドン・スクール|プリンストン|イェール|エール大学|マサチューセッツ|カリフォルニア大学|ジョンズ・?ホプキンス|北京大学|清華大学|ソウル大学|行政学院|INSEAD|University|College|MBA|(米国|英国|仏国|アメリカ|イギリス|フランス|ドイツ|カナダ|オーストラリア|中国|韓国)[^、。○]{0,20}(大学|大学院)/i.test(String(bio).normalize("NFKC"));
+}
+
+const PREFS = Object.values(BLOCKS).flat();
+// 生まれた都道府県（経歴の書き出しの「〇〇県…生まれ」から）
+export function birthPrefecture(bio) {
+  const head = String(bio).normalize("NFKC").slice(0, 50);
+  if (!/生まれ|生る|に生/.test(head)) return null;
+  let best = null;
+  for (const p of PREFS) {
+    const i = head.indexOf(p);
+    if (i >= 0 && (best === null || i < best.i)) best = { p, i };
+  }
+  if (best) return best.p;
+  return /(米国|アメリカ|中国|韓国|台湾|ブラジル|英国|旧満州|満州|朝鮮)/.test(head) ? "海外" : null;
+}
+
+// 選挙区（比例はブロック）の中で生まれたか
+export function hometown(house, district, birthPref) {
+  const d = String(district).normalize("NFKC");
+  if (house === "参議院" && /^比例/.test(d)) return "対象外（参院比例）";
+  if (!birthPref) return "出生地の記載なし";
+  if (birthPref === "海外") return "海外生まれ";
+  const block = d.match(/\(比\)\s*(\S+)/)?.[1];
+  const area = block ? BLOCKS[block] ?? [] : PREFS.filter((p) => d.startsWith(p) || d.includes(`・${p}`));
+  return area.includes(birthPref) ? "地元（同じ都道府県・ブロック）生まれ" : "ほかの地域の生まれ";
+}

@@ -148,7 +148,7 @@ export function verifyExtraction(extraction, docs) {
       dropped.push({ where: `achievements[${i}]`, title: a.title, reason: "確かめられる出典がない" });
       return [];
     }
-    return [{ id: `a${i + 1}`, date: a.date, type: a.type, title: a.title, summary: a.summary, sources }];
+    return [{ id: `a${i + 1}`, date: a.date, type: a.type, title: a.title, summary: a.summary, sources, ai: true }];
   });
 
   const cp = extraction.catchphrase;
@@ -225,7 +225,8 @@ export function validateData(data) {
     if (!Number.isInteger(m.terms) || m.terms < 1) err(`${at}.terms`, "1以上の整数");
     if (m.activity && !Number.isInteger(m.activity.speeches)) err(`${at}.activity.speeches`, "整数で書く");
     // AI で作った公約・実績を持つ議員は、人が確認したかどうかを必ず書く
-    const hasAiContent = (m.promises ?? []).length > 0 || (m.achievements ?? []).length > 0;
+    // 公開データから機械的に作った活動ログ（ai を持たない）は確認の対象外
+    const hasAiContent = (m.promises ?? []).length > 0 || (m.achievements ?? []).some((x) => x.ai);
     if (hasAiContent && (!m.review || typeof m.review.reviewed !== "boolean")) err(`${at}.review.reviewed`, "true/false で書く");
     if (m.catchphrase) checkSources([m.catchphrase.source ? { ...m.catchphrase.source, quote: m.catchphrase.quote } : {}], `${at}.catchphrase`);
 
