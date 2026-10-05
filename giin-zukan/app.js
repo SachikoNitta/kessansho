@@ -445,7 +445,7 @@ function renderApp(root, data) {
             ${m.electedBy ? `<dt>選ばれ方</dt><dd>${esc(m.electedBy)}${m.firstElected ? `・初当選 ${m.firstElected}年` : ""}</dd>` : ""}
             ${m.ministerial ? `<dt>政府の役職</dt><dd>${esc(m.ministerial)}</dd>` : ""}
             ${m.electedBy ? `<dt>学び</dt><dd>${esc(m.university ?? "大学の記載なし")}${m.studiedAbroad ? "・海外で学んだ経歴あり" : ""}</dd>` : ""}
-            ${m.hometown ? `<dt>生まれ</dt><dd>${esc(m.birthPref ?? "—")}（${esc(m.hometown)}）</dd>` : ""}
+            ${m.hometown ? `<dt>生まれ</dt><dd>${m.birthPref ? `${esc(m.birthPref)}・` : ""}${esc(m.hometown)}</dd>` : ""}
             ${m.dynasty === "親・祖父母に国会議員" ? `<dt>家族</dt><dd>親・祖父母に国会議員<span class="when">（${m.wikidata ? `<a href="${esc(safeUrl(m.wikidata))}" target="_blank" rel="noopener">Wikidata</a>` : "Wikidata"}）</span></dd>` : ""}
           </dl>
           <div class="skills" aria-label="力を入れている分野">${(m.fields ?? []).map((f) => `<span class="skill">${esc(f)}</span>`).join("")}</div>
