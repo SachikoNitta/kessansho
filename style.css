@@ -659,9 +659,8 @@ button { font: inherit; color: inherit; }
 /* 資料の縮小版：本物の資料を 420px 幅で描いて縮める。押せるのは札ごと */
 .doc-thumb-paper {
   position: relative; display: block; height: 150px; overflow: hidden;
-  background: #FFFDF8; border: 1px solid var(--line); border-top: 4px solid var(--index);
-  box-shadow: 2px 2px 0 -1px #F3EDE0, 2px 2px 0 0 var(--line), 4px 4px 0 -1px #EAE2D1, 4px 4px 0 0 var(--line);
-  margin: 0 4px 4px 0;
+  background: #FFFDF8; border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(46, 32, 18, 0.12), 0 4px 12px rgba(46, 32, 18, 0.14);
 }
 .doc-thumb-paper::after { content: ""; position: absolute; inset: auto 0 0; height: 36px; background: linear-gradient(transparent, #FFFDF8); }
 .doc-thumb-inner {
