@@ -651,19 +651,28 @@ button { font: inherit; color: inherit; }
 .binder > * { flex: none; }
 .doc-group { display: flex; flex-direction: column; }
 .doc-group-title { font-size: 13px; color: var(--muted); padding: 4px 0 6px; }
-.doc-row {
-  all: unset; cursor: pointer; box-sizing: border-box;
-  min-height: 60px; padding: 8px 4px; display: flex; align-items: center; gap: 12px;
-  border-top: 1px solid var(--line);
+.doc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+.doc-thumb {
+  all: unset; cursor: pointer; box-sizing: border-box; min-height: 48px;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
 }
-.doc-group .doc-row:last-child { border-bottom: 1px solid var(--line); }
-.doc-chip { flex: none; width: 10px; align-self: stretch; border-radius: 3px; background: var(--index); }
-.doc-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.doc-row-label { font-size: 16px; font-weight: 700; color: var(--ink); }
-.doc-row-source { font-size: 12px; color: var(--muted); }
-.doc-row-go { font-size: 22px; color: var(--faint); }
-.doc-row.marked .doc-row-label::after { content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 8px; border-radius: 50%; background: var(--red); vertical-align: 3px; }
-.doc-row:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+/* 資料の縮小版：本物の資料を 420px 幅で描いて縮める。押せるのは札ごと */
+.doc-thumb-paper {
+  position: relative; display: block; height: 150px; overflow: hidden;
+  background: #FFFDF8; border: 1px solid var(--line); border-top: 4px solid var(--index);
+  box-shadow: 2px 2px 0 -1px #F3EDE0, 2px 2px 0 0 var(--line), 4px 4px 0 -1px #EAE2D1, 4px 4px 0 0 var(--line);
+  margin: 0 4px 4px 0;
+}
+.doc-thumb-paper::after { content: ""; position: absolute; inset: auto 0 0; height: 36px; background: linear-gradient(transparent, #FFFDF8); }
+.doc-thumb-inner {
+  position: absolute; top: 10px; left: 10px; width: 380px;
+  display: flex; flex-direction: column; gap: 10px;
+  transform: scale(0.38); transform-origin: top left; pointer-events: none;
+}
+.doc-thumb-inner * { animation: none !important; opacity: 1 !important; transform: none; stroke-dashoffset: 0 !important; }
+.doc-thumb-label { font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.4; display: flex; align-items: center; gap: 6px; }
+.doc-thumb.marked .doc-thumb-label::after { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--red); }
+.doc-thumb:focus-visible .doc-thumb-paper { outline: 2px solid var(--red); outline-offset: 2px; }
 .binder-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: -6px; }
 .binder-pos { font-size: 13px; color: var(--muted); }
 .binder-nav { display: flex; justify-content: space-between; gap: 12px; }

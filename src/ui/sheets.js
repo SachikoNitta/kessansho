@@ -11,7 +11,7 @@ const DOC_COLORS = ["#E2BC5C", "#8DB57A", "#D98B76", "#7E9FCB", "#B392C6"];
 
 /**
  * 資料の綴り：画面いっぱいの紙に、一覧と一枚ずつの資料。
- *   一覧 … これまでの資料（新しい順）。問いの資料（marked）は「この問いの資料」として先頭にまとめる
+ *   一覧 … これまでの資料の縮小版を並べたギャラリー（新しい順）。問いの資料（marked）は先頭にまとめる
  *   一枚 … 資料を大きく出し、「← 一覧」と、前後の資料へ送るボタン
  * focus があればその資料を開いた状態で、なければ一覧で開く
  */
@@ -21,21 +21,26 @@ export function documentsSheet({ docs, renderDoc, marked = [], focus = null, foo
   const order = [...marked, ...others];
   const body = el("div", { class: "sheet-body binder" });
 
-  const row = (doc) => el("button", {
-    class: "doc-row" + (marked.includes(doc) ? " marked" : ""),
+  // 一覧は、資料の縮小版を並べたギャラリー。文字は資料名だけ
+  const thumb = (doc) => el("button", {
+    class: "doc-thumb" + (marked.includes(doc) ? " marked" : ""),
     style: `--index:${color(doc)}`,
     onclick: () => showDoc(doc),
+    "aria-label": `${doc.label}（${doc.source || "資料"}）を開く`,
   }, [
-    el("span", { class: "doc-chip", "aria-hidden": "true" }),
-    el("span", { class: "doc-row-text" }, [el("span", { class: "doc-row-label" }, doc.label), doc.source && el("span", { class: "doc-row-source" }, doc.source)]),
-    el("span", { class: "doc-row-go", "aria-hidden": "true" }, "›"),
+    el("span", { class: "doc-thumb-paper", "aria-hidden": "true" },
+      el("span", { class: "doc-thumb-inner" }, renderDoc(doc))),
+    el("span", { class: "doc-thumb-label" }, doc.label),
   ]);
 
   function showList() {
-    body.replaceChildren(
-      marked.length > 0 && el("div", { class: "doc-group" }, [el("div", { class: "doc-group-title hand" }, "この問いの資料"), ...marked.map(row)]),
-      others.length > 0 && el("div", { class: "doc-group" }, [el("div", { class: "doc-group-title hand" }, marked.length ? "これまでの資料" : "これまでの資料（新しい順）"), ...others.map(row)]),
-    );
+    body.replaceChildren(...[
+      marked.length > 0 && el("div", { class: "doc-group" }, [el("div", { class: "doc-group-title hand" }, "この問いの資料"), el("div", { class: "doc-grid" }, marked.map(thumb))]),
+      others.length > 0 && el("div", { class: "doc-group" }, [
+        marked.length > 0 && el("div", { class: "doc-group-title hand" }, "これまでの資料"),
+        el("div", { class: "doc-grid" }, others.map(thumb)),
+      ]),
+    ].filter(Boolean));
     body.scrollTop = 0;
   }
 
