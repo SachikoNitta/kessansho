@@ -2,6 +2,11 @@
 // generate.js と validate.js とテストが共有する。
 
 export const HOUSES = ["衆議院", "参議院"];
+export const GENDERS = ["男性", "女性", "その他・非公表"];
+// 前職（議員になる直前の主な職業）。分析の軸に使うので、決まった言葉から選ぶ
+export const CAREERS = ["地方議員", "官僚", "議員秘書", "民間企業", "弁護士", "医師・医療", "メディア", "労働組合", "教育・研究", "その他"];
+// 地域は比例代表のブロックで分ける
+export const REGIONS = ["北海道", "東北", "北関東", "南関東", "東京", "北陸信越", "東海", "近畿", "中国", "四国", "九州"];
 
 // 公約の状況。判定は AI の下書きなので、画面では必ず「AI判定」と根拠を添える。
 export const STATUSES = {
@@ -212,6 +217,12 @@ export function validateData(data) {
     if (!m.name) err(at, "name がない");
     if (!HOUSES.includes(m.house)) err(`${at}.house`, `${HOUSES.join(" / ")} のどれか`);
     if (!parties.has(m.party)) err(`${at}.party`, `parties にない: ${m.party}`);
+    if (!GENDERS.includes(m.gender)) err(`${at}.gender`, `${GENDERS.join(" / ")} のどれか`);
+    if (!Number.isInteger(m.birthYear)) err(`${at}.birthYear`, "西暦の整数で書く");
+    if (!CAREERS.includes(m.career)) err(`${at}.career`, `${CAREERS.join(" / ")} のどれか`);
+    if (!REGIONS.includes(m.region)) err(`${at}.region`, `${REGIONS.join(" / ")} のどれか`);
+    if (!Number.isInteger(m.terms) || m.terms < 1) err(`${at}.terms`, "1以上の整数");
+    if (m.activity && !Number.isInteger(m.activity.speeches)) err(`${at}.activity.speeches`, "整数で書く");
     if (!m.review || typeof m.review.reviewed !== "boolean") err(`${at}.review.reviewed`, "true/false で書く");
     if (m.catchphrase) checkSources([m.catchphrase.source ? { ...m.catchphrase.source, quote: m.catchphrase.quote } : {}], `${at}.catchphrase`);
 
@@ -245,4 +256,11 @@ export function upsertMember(data, member) {
   members.push(member);
   members.sort((a, b) => (a.kana ?? a.name).localeCompare(b.kana ?? b.name, "ja"));
   return { ...data, members };
+}
+
+// 1行に1人ずつ書く（差分が読みやすく、ファイルも小さい）
+export function serializeData(data) {
+  const { members, ...rest } = data;
+  const head = JSON.stringify(rest).slice(0, -1);
+  return `${head},"members":[\n${members.map((m) => JSON.stringify(m)).join(",\n")}\n]}\n`;
 }

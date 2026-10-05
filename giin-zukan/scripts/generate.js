@@ -15,7 +15,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import {
-  EXTRACTION_SCHEMA, htmlToText, speechesToDocs, upsertMember, validateData, verifyExtraction,
+  EXTRACTION_SCHEMA, htmlToText, speechesToDocs, serializeData, upsertMember, validateData, verifyExtraction,
 } from "./lib.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -28,6 +28,7 @@ const MAX_DOC_CHARS = 12000; // 一つの資料から渡す上限（長い発言
 async function fetchSpeeches(speaker, from) {
   const docs = [];
   let start = 1;
+  let total = 0;
   while (docs.length < MAX_SPEECHES) {
     const url = new URL(KOKKAI_API);
     url.search = new URLSearchParams({
@@ -36,12 +37,14 @@ async function fetchSpeeches(speaker, from) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`国会会議録 API が ${res.status} を返しました: ${url}`);
     const body = await res.json();
+    total = Number(body.numberOfRecords ?? 0);
     docs.push(...speechesToDocs(body, docs.length + 1));
     if (!body.nextRecordPosition) break;
     start = body.nextRecordPosition;
     await new Promise((r) => setTimeout(r, 1000)); // API への負荷を抑える
   }
-  return docs.slice(0, MAX_SPEECHES);
+  // total は期間内の発言の総数（Claude に渡すのは先頭 MAX_SPEECHES 件まで）
+  return { docs: docs.slice(0, MAX_SPEECHES), total, url: "https://kokkai.ndl.go.jp/", speaker };
 }
 
 async function fetchPages(pages) {
@@ -105,10 +108,9 @@ async function main() {
   const member = JSON.parse(await readFile(configPath, "utf8"));
 
   console.log(`資料を集めています: ${member.name}`);
-  const docs = [
-    ...(await fetchPages(member.pages ?? [])),
-    ...(await fetchSpeeches(member.kokkaiSpeaker ?? member.name, member.from ?? "2021-01-01")),
-  ];
+  const from = member.from ?? "2021-01-01";
+  const speeches = await fetchSpeeches(member.kokkaiSpeaker ?? member.name, from);
+  const docs = [...(await fetchPages(member.pages ?? [])), ...speeches.docs];
   if (docs.length === 0) throw new Error("資料が一つも集まりませんでした。");
   console.log(`資料 ${docs.length} 件を Claude に渡します`);
 
@@ -125,6 +127,15 @@ async function main() {
     district: member.district,
     party: member.party,
     terms: member.terms,
+    gender: member.gender,
+    birthYear: member.birthYear,
+    career: member.career,
+    region: member.region,
+    activity: {
+      speeches: speeches.total,
+      since: from,
+      source: { title: `国会会議録検索システム（発言者「${speeches.speaker}」${from}以降）`, url: speeches.url },
+    },
     avatar: member.avatar,
     catchphrase: verified.catchphrase,
     fields: verified.fields,
@@ -135,7 +146,7 @@ async function main() {
 
   const errors = validateData(next);
   if (errors.length) throw new Error(`データの形に問題があります:\n${errors.join("\n")}`);
-  await writeFile(DATA, `${JSON.stringify(next, null, 2)}\n`);
+  await writeFile(DATA, serializeData(next));
   console.log(`書き込みました: 公約 ${verified.promises.length} 件、実績 ${verified.achievements.length} 件（捨てた項目 ${verified.dropped.length} 件）`);
   console.log("出典を人の目で確かめたら、review.reviewed を true にしてください。");
 }

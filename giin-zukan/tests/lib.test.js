@@ -79,3 +79,18 @@ test("同じ id の議員は置き換える", () => {
   assert.equal(next.members.length, 2);
   assert.equal(next.members.find((m) => m.id === "a").v, 2);
 });
+
+test("1行1人の書き出しは読み戻すと同じデータになる", async () => {
+  const { serializeData } = await import("../scripts/lib.js");
+  const data = { meta: { sample: true }, parties: [{ id: "x" }], members: [{ id: "a" }, { id: "b", n: "</script>" }] };
+  const text = serializeData(data);
+  assert.deepEqual(JSON.parse(text), data);
+  assert.equal(text.trim().split("\n").length, 4);
+});
+
+test("サンプルの集団は衆参の定数どおりで、分析に使う属性がそろっている", () => {
+  const data = JSON.parse(readFileSync(new URL("../data/members.json", import.meta.url)));
+  assert.equal(data.members.filter((m) => m.house === "衆議院").length, 465);
+  assert.equal(data.members.filter((m) => m.house === "参議院").length, 248);
+  for (const m of data.members) assert.ok(m.gender && m.birthYear && m.career && m.region && m.activity, m.id);
+});

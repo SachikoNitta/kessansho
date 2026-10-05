@@ -2,7 +2,8 @@
 import { writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateData } from "./lib.js";
+import { serializeData, validateData } from "./lib.js";
+import { generateMembers } from "./sample-crowd.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = (title, path, date, quote) => ({ title, url: `https://example.jp/${path}`, date, quote });
@@ -14,10 +15,13 @@ const data = {
     note: "このデータはデザイン確認用の架空のサンプルです。実在の人物・政党・出来事とは関係ありません。",
   },
   parties: [
-    { id: "aozora", name: "あおぞら党", color: "#2F6FE4" },
-    { id: "midori", name: "みどりの会", color: "#1E9E6A" },
-    { id: "kurashi", name: "くらし改革党", color: "#E0782B" },
-    { id: "independent", name: "無所属", color: "#7A7F99" },
+    // 色はデータ可視化のカテゴリ色（この順番で色覚の多様性に配慮して検証ずみ）
+    { id: "aozora", name: "あおぞら党", color: "#2a78d6" },
+    { id: "kurashi", name: "くらし改革党", color: "#eb6834" },
+    { id: "midori", name: "みどりの会", color: "#1baf7a" },
+    { id: "hikari", name: "ひかり連合", color: "#eda100" },
+    { id: "shizuku", name: "しずく党", color: "#e87ba4" },
+    { id: "independent", name: "無所属", color: "#008300" },
   ],
   members: [
     {
@@ -28,6 +32,8 @@ const data = {
       district: "架空県第3区",
       party: "aozora",
       terms: 2,
+      gender: "女性", birthYear: 1984, career: "地方議員", region: "南関東",
+      activity: { speeches: 64, since: "2024-11-01", source: { title: "国会会議録検索システム", url: "https://example.jp/kokkai/search/kasugai" } },
       avatar: { skin: "#F6D7BD", hair: "#3A2A2F", style: "bob", glasses: false },
       catchphrase: {
         quote: "保育園の空きを待つ一年は、子どもにとって一生の一年です。",
@@ -78,6 +84,8 @@ const data = {
       district: "架空県選挙区",
       party: "midori",
       terms: 1,
+      gender: "男性", birthYear: 1979, career: "教育・研究", region: "北陸信越",
+      activity: { speeches: 31, since: "2025-08-01", source: { title: "国会会議録検索システム", url: "https://example.jp/kokkai/search/oba" } },
       avatar: { skin: "#E9C29F", hair: "#1F2430", style: "short", glasses: true },
       catchphrase: {
         quote: "電気代の明細は、この国のエネルギー政策の通知表です。",
@@ -127,6 +135,8 @@ const data = {
       district: "比例 架空ブロック",
       party: "kurashi",
       terms: 4,
+      gender: "女性", birthYear: 1961, career: "労働組合", region: "近畿",
+      activity: { speeches: 88, since: "2024-11-01", source: { title: "国会会議録検索システム", url: "https://example.jp/kokkai/search/komiyama" } },
       avatar: { skin: "#F1CFB3", hair: "#8C8C99", style: "long", glasses: true },
       catchphrase: {
         quote: "年金の通知は、読める日本語で届くべきです。",
@@ -168,6 +178,8 @@ const data = {
       district: "比例代表",
       party: "independent",
       terms: 3,
+      gender: "男性", birthYear: 1970, career: "民間企業", region: "東京",
+      activity: { speeches: 112, since: "2022-08-01", source: { title: "国会会議録検索システム", url: "https://example.jp/kokkai/search/takatori" } },
       avatar: { skin: "#D9A980", hair: "#4A3326", style: "spiky", glasses: false },
       catchphrase: {
         quote: "政治資金の領収書は、一円から見せればいい。",
@@ -213,10 +225,13 @@ const data = {
   ],
 };
 
+data.members.push(...generateMembers(data.members));
+data.members.sort((a, b) => a.kana.localeCompare(b.kana, "ja"));
+
 const errors = validateData(data);
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);
 }
-await writeFile(join(ROOT, "data", "members.json"), `${JSON.stringify(data, null, 2)}\n`);
-console.log("data/members.json を書き出しました");
+await writeFile(join(ROOT, "data", "members.json"), serializeData(data));
+console.log(`data/members.json を書き出しました（${data.members.length} 人）`);

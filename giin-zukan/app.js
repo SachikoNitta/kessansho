@@ -1,4 +1,7 @@
-// 議員図鑑の画面。データは window.GIIN_DATA（1枚にまとめたプレビュー）か data/members.json から読む。
+// 国会議員図鑑：議員の集団を、いろいろな軸で切って見比べる道具。
+// 一人＝一つの点。縦軸×横軸のマスに点を並べ、色で三つめの軸を重ねる。
+// マスを選ぶとその集団のプロフィール、点や名前を選ぶとその議員のステータス画面が開く。
+// データは window.GIIN_DATA（1枚にまとめたプレビュー）か data/members.json から読む。
 
 const STATUS = {
   achieved: "実現",
@@ -9,9 +12,13 @@ const STATUS = {
 };
 const STATUS_ORDER = Object.keys(STATUS);
 const TYPE = { bill: "法案", question: "質問・質疑", written_question: "質問主意書", committee: "委員会・役職", other: "その他" };
+const CAREERS = ["地方議員", "官僚", "議員秘書", "民間企業", "弁護士", "医師・医療", "メディア", "労働組合", "教育・研究", "その他"];
+const REGIONS = ["北海道", "東北", "北関東", "南関東", "東京", "北陸信越", "東海", "近畿", "中国", "四国", "九州"];
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const safeUrl = (u) => (/^https?:\/\//.test(u ?? "") ? u : "#");
+const fmt = (n, d = 0) => (Number.isFinite(n) ? n.toFixed(d) : "—");
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 
 // 写真のかわりに、データの髪色・髪型・メガネから描くちびキャラ
 function avatar(a = {}, color = "#2F5BEA") {
@@ -39,18 +46,18 @@ function avatar(a = {}, color = "#2F5BEA") {
   </svg>`;
 }
 
-function counts(m) {
+function statusCounts(members) {
   const c = Object.fromEntries(STATUS_ORDER.map((k) => [k, 0]));
-  for (const p of m.promises ?? []) c[p.status] = (c[p.status] ?? 0) + 1;
+  for (const m of members) for (const p of m.promises ?? []) c[p.status] = (c[p.status] ?? 0) + 1;
   return c;
 }
 
-function statusBar(m) {
-  const c = counts(m);
-  const total = (m.promises ?? []).length || 1;
-  const segs = STATUS_ORDER.filter((k) => c[k]).map((k) => `<span style="width:${(c[k] / total) * 100}%;background:var(--st-${k})" title="${STATUS[k]} ${c[k]}件"></span>`).join("");
-  const legend = STATUS_ORDER.filter((k) => c[k]).map((k) => `<span><i style="background:var(--st-${k})"></i>${STATUS[k]} ${c[k]}</span>`).join("");
-  return `<div class="bar" role="img" aria-label="公約の状況 ${STATUS_ORDER.filter((k) => c[k]).map((k) => `${STATUS[k]}${c[k]}件`).join("、")}">${segs}</div><div class="legend">${legend}</div>`;
+function statusBar(c, label = "公約の状況") {
+  const total = Object.values(c).reduce((a, b) => a + b, 0) || 1;
+  const on = STATUS_ORDER.filter((k) => c[k]);
+  const segs = on.map((k) => `<span style="width:${(c[k] / total) * 100}%;background:var(--st-${k})" title="${STATUS[k]} ${c[k]}件"></span>`).join("");
+  const legend = on.map((k) => `<span><i style="background:var(--st-${k})"></i>${STATUS[k]} ${c[k]}</span>`).join("");
+  return `<div class="bar" role="img" aria-label="${label} ${on.map((k) => `${STATUS[k]}${c[k]}件`).join("、")}">${segs}</div><div class="legend">${legend}</div>`;
 }
 
 const reviewBadge = (m) => (m.review?.reviewed
@@ -65,75 +72,284 @@ function sourceList(sources, label = "出典") {
     <li><q>${esc(s.quote)}</q><a href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener">${esc(s.title)}</a>${s.date ? ` <span class="when">${esc(s.date)}</span>` : ""}</li>`).join("")}</ul></details>`;
 }
 
+// ---- 軸 -------------------------------------------------------------------
+// kind: "cat"（順序のない区分）は区別しやすいカテゴリ色、"ord"（順序のある区分）は一色の濃淡で塗る
+function buildAxes(data) {
+  const asOf = Number(String(data.meta.updatedAt ?? new Date().getFullYear()).slice(0, 4));
+  const age = (m) => asOf - m.birthYear;
+  const achievedShare = (m) => {
+    const ps = m.promises ?? [];
+    return ps.length ? ps.filter((p) => p.status === "achieved").length / ps.length : -1;
+  };
+  const bills = (m) => (m.achievements ?? []).filter((a) => a.type === "bill").length;
+  const band = (v, edges, labels) => labels[edges.findIndex((e) => v <= e)] ?? labels.at(-1);
+
+  const axes = [
+    { id: "none", label: "まとめない", kind: "cat", values: ["全員"], get: () => "全員" },
+    { id: "house", label: "院", kind: "cat", values: ["衆議院", "参議院"], get: (m) => m.house },
+    { id: "party", label: "政党", kind: "cat", values: data.parties.map((p) => p.name), get: (m) => data.partyById.get(m.party)?.name },
+    { id: "gender", label: "性別", kind: "cat", values: ["男性", "女性", "その他・非公表"], get: (m) => m.gender },
+    { id: "age", label: "年代", kind: "ord", values: ["30代以下", "40代", "50代", "60代", "70代以上"], get: (m) => band(age(m), [39, 49, 59, 69], ["30代以下", "40代", "50代", "60代", "70代以上"]) },
+    { id: "terms", label: "当選回数", kind: "ord", values: ["1回", "2〜3回", "4〜6回", "7回以上"], get: (m) => band(m.terms, [1, 3, 6], ["1回", "2〜3回", "4〜6回", "7回以上"]) },
+    { id: "career", label: "前職", kind: "cat", values: CAREERS, get: (m) => m.career },
+    { id: "region", label: "地域", kind: "cat", values: REGIONS, get: (m) => m.region },
+    { id: "field", label: "一番の得意分野", kind: "cat", values: [...new Set(data.members.map((m) => m.fields?.[0]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja")), get: (m) => m.fields?.[0] ?? "—" },
+    { id: "achieve", label: "公約の実現割合（AI判定）", kind: "ord", values: ["実現なし", "3割未満", "3〜6割", "6割以上"], get: (m) => { const s = achievedShare(m); return s <= 0 ? "実現なし" : band(s, [0.299, 0.6], ["3割未満", "3〜6割", "6割以上"]); } },
+    { id: "speeches", label: "国会での発言回数", kind: "ord", values: ["20回以下", "21〜50回", "51〜100回", "101回以上"], get: (m) => band(m.activity?.speeches ?? 0, [20, 50, 100], ["20回以下", "21〜50回", "51〜100回", "101回以上"]) },
+    { id: "bills", label: "議員立法の提出", kind: "ord", values: ["なし", "1件", "2件以上"], get: (m) => band(bills(m), [0, 1], ["なし", "1件", "2件以上"]) },
+  ];
+  return { axes, byId: new Map(axes.map((a) => [a.id, a])), age };
+}
+
+// 色に使える軸は区分が8つまで（それより多い色は見分けられない）
+const colorable = (axis) => axis.values.length <= 8;
+
+function colorOf(axis, value) {
+  const i = axis.values.indexOf(value);
+  if (axis.id === "none") return "var(--s1)";
+  if (axis.kind === "ord") {
+    const steps = axis.values.length;
+    const q = steps === 1 ? 5 : Math.round(1 + (i / (steps - 1)) * 4); // q1〜q5 に割り当てる
+    return `var(--q${q})`;
+  }
+  return `var(--s${i + 1})`;
+}
+
+const PRESETS = [
+  { label: "政党ごとの女性の割合", x: "party", y: "none", color: "gender" },
+  { label: "当選回数と発言の多さ", x: "terms", y: "speeches", color: "party" },
+  { label: "前職と得意分野", x: "career", y: "none", color: "party" },
+  { label: "年代と公約の実現", x: "age", y: "achieve", color: "house" },
+  { label: "地域ごとの政党", x: "region", y: "house", color: "party" },
+];
+
+// ---- 画面 -----------------------------------------------------------------
 function renderApp(root, data) {
-  const parties = new Map(data.parties.map((p) => [p.id, p]));
-  const state = { q: "", house: "", party: "" };
+  data.partyById = new Map(data.parties.map((p) => [p.id, p]));
+  const { axes, byId, age } = buildAxes(data);
+  const state = { x: "party", y: "none", color: "gender", house: "", q: "", cell: null, sort: "kana", limit: 40 };
+
+  const axisOptions = (list, current) => list.map((a) => `<option value="${a.id}" ${a.id === current ? "selected" : ""}>${esc(a.label)}</option>`).join("");
 
   root.innerHTML = `
     <header class="masthead">
       <h1 class="logo"><small>KOKKAI GIIN ZUKAN</small>国会議員<em>図鑑</em></h1>
-      <div class="count">登録 <b id="count">${data.members.length}</b> 人</div>
+      <p class="lede">一人ひとりが一つの点。軸を選んで、議員の集団を切り分けてみましょう。</p>
     </header>
     ${data.meta.sample ? `<p class="notice"><strong>サンプル表示中：</strong>${esc(data.meta.note)}</p>` : ""}
-    <div class="filters" role="search">
-      <input type="search" id="q" placeholder="名前・分野・公約で探す（例：保育）" aria-label="議員を探す">
-      <button class="chip" data-house="" aria-pressed="true">全員</button>
-      <button class="chip" data-house="衆議院" aria-pressed="false">衆議院</button>
-      <button class="chip" data-house="参議院" aria-pressed="false">参議院</button>
-      <select id="party" class="chip" aria-label="政党で絞り込む">
-        <option value="">すべての政党</option>
-        ${data.parties.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}
-      </select>
-    </div>
-    <div class="grid" id="grid"></div>
+
+    <section class="controls" aria-label="分析の設定">
+      <div class="axis-pickers">
+        <label class="picker"><span>横軸</span><select id="ax-x">${axisOptions(axes, state.x)}</select></label>
+        <label class="picker"><span>縦軸</span><select id="ax-y">${axisOptions(axes, state.y)}</select></label>
+        <label class="picker"><span>色分け</span><select id="ax-color">${axisOptions(axes.filter(colorable), state.color)}</select></label>
+        <button class="swap" id="swap" type="button" title="横軸と縦軸を入れかえる">⇄ 入れかえ</button>
+      </div>
+      <div class="filters">
+        <div class="seg" role="group" aria-label="院で絞り込む">
+          <button class="chip" data-house="" aria-pressed="true">両院</button>
+          <button class="chip" data-house="衆議院" aria-pressed="false">衆議院</button>
+          <button class="chip" data-house="参議院" aria-pressed="false">参議院</button>
+        </div>
+        <input type="search" id="q" placeholder="名前・公約の言葉で絞り込む（例：保育）" aria-label="名前や公約の言葉で絞り込む">
+      </div>
+      <div class="presets" aria-label="問いから始める"><span>問いから始める：</span>${PRESETS.map((p, i) => `<button class="preset" data-preset="${i}">${esc(p.label)}</button>`).join("")}</div>
+    </section>
+
+    <section class="board" aria-label="集団の地図">
+      <div class="legend-row" id="legend"></div>
+      <div class="matrix-scroll"><div class="matrix" id="matrix"></div></div>
+      <p class="hint">マスを選ぶと、その集団のプロフィールが下に出ます。点にふれると名前、選ぶとその議員のステータス画面が開きます。</p>
+    </section>
+
+    <section class="group" id="group" aria-live="polite"></section>
+
     <footer class="footer">
-      内容は国会会議録・選挙公報などの公開情報から AI が下書きし、引用が原文にあることを機械で照合しています。
-      「AI下書き・未確認」の議員は、人の目での確認がまだです。誤りに気づいたら出典を添えてお知らせください。
+      公約・実績は国会会議録・選挙公報などの公開情報から AI が下書きし、引用が原文にあることを機械で照合しています。
+      「公約の実現割合」は AI の判定にもとづくため、各議員の画面で根拠の出典を確かめてください。
       ${data.meta.updatedAt ? `最終更新 ${esc(data.meta.updatedAt)}` : ""}
     </footer>
+    <div class="tooltip" id="tip" hidden></div>
     <div class="detail" id="detail" hidden></div>`;
 
-  const grid = root.querySelector("#grid");
-  const detail = root.querySelector("#detail");
+  const $ = (sel) => root.querySelector(sel);
+  const matrix = $("#matrix");
+  const tip = $("#tip");
+  const detail = $("#detail");
+  const byMember = new Map(data.members.map((m) => [m.id, m]));
 
-  const matches = (m) => {
+  const filtered = () => data.members.filter((m) => {
     if (state.house && m.house !== state.house) return false;
-    if (state.party && m.party !== state.party) return false;
     if (!state.q) return true;
-    const hay = [m.name, m.kana, m.district, parties.get(m.party)?.name, ...(m.fields ?? []),
-      ...(m.promises ?? []).flatMap((p) => [p.title, p.detail])].join(" ");
+    const hay = [m.name, m.kana, m.district, ...(m.fields ?? []), ...(m.promises ?? []).map((p) => p.title)].join(" ");
     return hay.includes(state.q);
-  };
+  });
 
-  function renderGrid() {
-    const list = data.members.filter(matches);
-    root.querySelector("#count").textContent = list.length;
-    grid.innerHTML = list.length ? list.map((m) => {
-      const p = parties.get(m.party);
-      return `<button class="card" data-id="${esc(m.id)}" style="--pc:${esc(p?.color)}" aria-label="${esc(m.name)}のステータスを見る">
-        <div class="art">${avatar(m.avatar, p?.color)}<span class="house">${esc(m.house)}</span><span class="terms" title="当選${m.terms}回">${stars(m.terms)}</span></div>
-        <div class="body">
-          <span class="kana">${esc(m.kana)}</span>
-          <h2 class="name">${esc(m.name)}</h2>
-          <div class="meta"><span class="party">${esc(p?.name)}</span>・${esc(m.district)}</div>
-          ${statusBar(m)}
-          ${m.catchphrase ? `<p class="quote">${esc(m.catchphrase.quote)}</p>` : ""}
-          <div>${reviewBadge(m)}</div>
-        </div>
-      </button>`;
-    }).join("") : `<p class="empty">条件に合う議員が見つかりません。言葉を変えて探してみてください。</p>`;
+  function render() {
+    const X = byId.get(state.x);
+    const Y = byId.get(state.y);
+    const C = byId.get(state.color);
+    const list = filtered();
+    const cIndex = (m) => C.values.indexOf(C.get(m));
+
+    // 区分ごとに数える（0人の区分は出さない。ただし順序のある軸は抜けがわかるように残す）
+    const present = (axis) => axis.values.filter((v) => axis.kind === "ord" || list.some((m) => axis.get(m) === v));
+    const xs = present(X);
+    const ys = present(Y);
+    const cells = new Map();
+    for (const m of list) {
+      const key = `${Y.get(m)}\u0000${X.get(m)}`;
+      if (!cells.has(key)) cells.set(key, []);
+      cells.get(key).push(m);
+    }
+    // 同じ色を隣りあわせにして、積み上げ棒のように読めるようにする
+    for (const ms of cells.values()) ms.sort((a, b) => cIndex(a) - cIndex(b) || a.kana.localeCompare(b.kana, "ja"));
+
+    // 凡例（色の区分と人数）
+    const cCounts = C.values.map((v) => list.filter((m) => C.get(m) === v).length);
+    $("#legend").innerHTML = state.color === "none" ? "" : `<span class="legend-title">${esc(C.label)}</span>${C.values.map((v, i) => cCounts[i] ? `<span class="key"><i style="background:${colorOf(C, v)}"></i>${esc(v)} <b>${cCounts[i]}</b></span>` : "").join("")}`;
+
+    // マス目
+    const showY = state.y !== "none";
+    matrix.style.gridTemplateColumns = `${showY ? "minmax(84px, max-content) " : ""}repeat(${xs.length}, minmax(${xs.length > 6 ? 108 : 132}px, 1fr))`;
+    const maxCell = Math.max(1, ...[...cells.values()].map((v) => v.length));
+    let html = showY ? `<div class="corner">${esc(Y.label)} ＼ ${esc(X.label)}</div>` : "";
+    html += xs.map((x) => `<div class="colhead">${esc(x)}<small>${list.filter((m) => X.get(m) === x).length}人</small></div>`).join("");
+    for (const y of ys) {
+      if (showY) html += `<div class="rowhead">${esc(y)}<small>${list.filter((m) => Y.get(m) === y).length}人</small></div>`;
+      for (const x of xs) {
+        const key = `${y}\u0000${x}`;
+        const ms = cells.get(key) ?? [];
+        const selected = state.cell === key;
+        const heat = ms.length / maxCell;
+        html += `<button class="cell${selected ? " is-selected" : ""}${ms.length ? "" : " is-empty"}" data-key="${esc(key)}" ${ms.length ? "" : "disabled"}
+          aria-label="${showY ? `${esc(Y.label)} ${esc(y)}、` : ""}${esc(X.label)} ${esc(x)}：${ms.length}人" style="--heat:${heat.toFixed(3)}">
+          <span class="n">${ms.length}<small>人</small></span>
+          <span class="dots">${ms.map((m) => `<i data-id="${esc(m.id)}" style="background:${colorOf(C, C.get(m))}"></i>`).join("")}</span>
+        </button>`;
+      }
+    }
+    matrix.innerHTML = html;
+    renderGroup(list, X, Y);
   }
 
+  function renderGroup(list, X, Y) {
+    let group = list;
+    let title = state.house || state.q ? "絞り込んだ議員" : "すべての議員";
+    if (state.cell) {
+      const [y, x] = state.cell.split("\u0000");
+      group = list.filter((m) => X.get(m) === x && Y.get(m) === y);
+      title = [state.y !== "none" ? y : null, state.x !== "none" ? x : null].filter(Boolean).join(" × ") || "全員";
+      if (!group.length) { state.cell = null; return renderGroup(list, X, Y); }
+    }
+    const all = data.members;
+    const stat = (ms) => {
+      const n = ms.length || 1;
+      const sp = ms.map((m) => m.activity?.speeches ?? 0).sort((a, b) => a - b);
+      return {
+        n: ms.length,
+        age: ms.reduce((s, m) => s + age(m), 0) / n,
+        female: pct(ms.filter((m) => m.gender === "女性").length, ms.length),
+        terms: ms.reduce((s, m) => s + m.terms, 0) / n,
+        speeches: sp.length ? sp[Math.floor(sp.length / 2)] : 0,
+      };
+    };
+    const g = stat(group);
+    const a = stat(all);
+
+    // 得意分野（その分野を掲げる議員の割合。全体との差も出す）
+    const fieldShare = (ms) => {
+      const c = new Map();
+      for (const m of ms) for (const f of m.fields ?? []) c.set(f, (c.get(f) ?? 0) + 1);
+      return c;
+    };
+    const gf = fieldShare(group);
+    const af = fieldShare(all);
+    const topFields = [...gf.entries()].sort((p, q) => q[1] - p[1]).slice(0, 6);
+    const maxShare = Math.max(...topFields.map(([, v]) => v / group.length), 0.01);
+
+    const sorters = {
+      kana: (p, q) => p.kana.localeCompare(q.kana, "ja"),
+      speeches: (p, q) => (q.activity?.speeches ?? 0) - (p.activity?.speeches ?? 0),
+      terms: (p, q) => q.terms - p.terms,
+      age: (p, q) => age(q) - age(p),
+    };
+    const rows = [...group].sort(sorters[state.sort]);
+    const shown = rows.slice(0, state.limit);
+
+    $("#group").innerHTML = `
+      <header class="group-head">
+        <div><span class="eyebrow">この集団のプロフィール</span><h2>${esc(title)}</h2></div>
+        ${state.cell ? `<button class="chip" id="clear-cell">選択を外す</button>` : ""}
+      </header>
+      <div class="kpis">
+        ${kpi("人数", `${g.n}<small>人</small>`, state.cell || g.n !== a.n ? `全体の${pct(g.n, a.n)}%` : "")}
+        ${kpi("平均年齢", `${fmt(g.age, 1)}<small>歳</small>`, `全体 ${fmt(a.age, 1)}歳`)}
+        ${kpi("女性の割合", `${g.female}<small>%</small>`, `全体 ${a.female}%`)}
+        ${kpi("平均当選回数", `${fmt(g.terms, 1)}<small>回</small>`, `全体 ${fmt(a.terms, 1)}回`)}
+        ${kpi("発言回数（中央値）", `${g.speeches}<small>回</small>`, `全体 ${a.speeches}回`)}
+      </div>
+      <div class="group-grid">
+        <section class="panel">
+          <h3>公約の状況 <span class="badge-ai">AI判定</span></h3>
+          ${statusBar(statusCounts(group))}
+          <p class="note">この集団の議員が掲げた公約 ${group.reduce((s, m) => s + (m.promises?.length ?? 0), 0)} 件の内訳。全体の内訳：</p>
+          ${statusBar(statusCounts(all), "全体の公約の状況")}
+        </section>
+        <section class="panel">
+          <h3>よく掲げる分野</h3>
+          <ul class="fields">${topFields.map(([f, v]) => {
+            const share = v / group.length;
+            const base = (af.get(f) ?? 0) / all.length;
+            return `<li><span class="f-name">${esc(f)}</span>
+              <span class="f-track"><span class="f-bar" style="width:${(share / maxShare) * 100}%"></span><span class="f-base" style="left:${Math.min(100, (base / maxShare) * 100)}%" title="全体 ${pct(base, 1)}%"></span></span>
+              <span class="f-val">${Math.round(share * 100)}%</span></li>`;
+          }).join("")}</ul>
+          <p class="note">棒はこの集団でその分野を掲げる議員の割合、縦の線は全体での割合。</p>
+        </section>
+      </div>
+      <section class="panel">
+        <div class="list-head">
+          <h3>議員の一覧 <small>${group.length}人</small></h3>
+          <label class="picker small"><span>並べ方</span><select id="sort">
+            <option value="kana" ${state.sort === "kana" ? "selected" : ""}>ふりがな順</option>
+            <option value="speeches" ${state.sort === "speeches" ? "selected" : ""}>発言の多い順</option>
+            <option value="terms" ${state.sort === "terms" ? "selected" : ""}>当選回数の多い順</option>
+            <option value="age" ${state.sort === "age" ? "selected" : ""}>年齢の高い順</option>
+          </select></label>
+        </div>
+        <div class="table-scroll"><table class="members">
+          <thead><tr><th scope="col">名前</th><th scope="col">政党</th><th scope="col">院・選挙区</th><th scope="col" class="num">年齢</th><th scope="col" class="num">当選</th><th scope="col" class="num">発言</th><th scope="col">公約の状況</th></tr></thead>
+          <tbody>${shown.map((m) => {
+            const p = data.partyById.get(m.party);
+            const c = statusCounts([m]);
+            return `<tr>
+              <th scope="row"><button class="name-link" data-open="${esc(m.id)}">${esc(m.name)}</button></th>
+              <td><span class="party" style="--pc:${esc(p?.color)}">${esc(p?.name)}</span></td>
+              <td>${esc(m.house.slice(0, 1))}・${esc(m.district)}</td>
+              <td class="num">${age(m)}</td><td class="num">${m.terms}</td><td class="num">${m.activity?.speeches ?? "—"}</td>
+              <td><span class="mini">${STATUS_ORDER.filter((k) => c[k]).map((k) => `<i style="background:var(--st-${k});flex:${c[k]}" title="${STATUS[k]} ${c[k]}件"></i>`).join("")}</span></td>
+            </tr>`;
+          }).join("")}</tbody>
+        </table></div>
+        ${rows.length > shown.length ? `<button class="more" id="more">もっと見る（残り ${rows.length - shown.length}人）</button>` : ""}
+      </section>`;
+  }
+
+  const kpi = (label, value, sub) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
+
+  // ---- 一人のステータス画面 ----
   function openDetail(id, tab = "quests") {
-    const m = data.members.find((x) => x.id === id);
+    const m = byMember.get(id);
     if (!m) return;
-    const p = parties.get(m.party);
-    const c = counts(m);
+    tip.hidden = true;
+    const p = data.partyById.get(m.party);
+    const c = statusCounts([m]);
     const promises = [...(m.promises ?? [])].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
     const log = [...(m.achievements ?? [])].sort((a, b) => b.date.localeCompare(a.date));
 
     detail.innerHTML = `<div class="sheet" style="--pc:${esc(p?.color)}" role="dialog" aria-modal="true" aria-labelledby="d-name">
-      <button class="close" id="close">✕ 図鑑にもどる</button>
+      <button class="close" id="close">✕ 分析にもどる</button>
       <section class="hero">
         <div class="art">${avatar(m.avatar, p?.color)}</div>
         <div class="info">
@@ -141,7 +357,9 @@ function renderApp(root, data) {
           <dl class="profile">
             <dt>所属</dt><dd>${esc(m.house)}・${esc(p?.name)}</dd>
             <dt>選挙区</dt><dd>${esc(m.district)}</dd>
-            <dt>当選</dt><dd>${esc(m.terms)}回 <span style="color:var(--star)">${stars(m.terms)}</span></dd>
+            <dt>当選</dt><dd>${esc(m.terms)}回 <span class="stars">${stars(m.terms)}</span></dd>
+            <dt>年齢・性別</dt><dd>${age(m)}歳・${esc(m.gender)}</dd>
+            <dt>前職</dt><dd>${esc(m.career)}</dd>
           </dl>
           <div class="skills" aria-label="力を入れている分野">${(m.fields ?? []).map((f) => `<span class="skill">${esc(f)}</span>`).join("")}</div>
           ${m.catchphrase ? `<p class="serif">「${esc(m.catchphrase.quote)}」<small>${esc(m.catchphrase.source.title)} ${esc(m.catchphrase.source.date)}・<a href="${esc(safeUrl(m.catchphrase.source.url))}" target="_blank" rel="noopener">原文</a></small></p>` : ""}
@@ -152,9 +370,9 @@ function renderApp(root, data) {
         <div class="stat"><div class="label">公約</div><div class="value">${(m.promises ?? []).length}</div></div>
         <div class="stat"><div class="label">実現</div><div class="value" style="color:var(--st-achieved)">${c.achieved}</div></div>
         <div class="stat"><div class="label">進行中</div><div class="value" style="color:var(--st-in_progress)">${c.in_progress}</div></div>
-        <div class="stat"><div class="label">活動ログ</div><div class="value">${log.length}</div></div>
+        <div class="stat"><div class="label">国会での発言</div><div class="value">${m.activity?.speeches ?? "—"}</div></div>
       </section>
-      ${statusBar(m)}
+      ${statusBar(c)}
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-tab="quests" aria-selected="${tab === "quests"}">公約クエスト</button>
         <button class="tab" role="tab" data-tab="log" aria-selected="${tab === "log"}">活動ログ</button>
@@ -175,42 +393,76 @@ function renderApp(root, data) {
           <li><time datetime="${esc(a.date)}">${esc(a.date)}</time>
             <div class="entry"><span class="type">${esc(TYPE[a.type] ?? a.type)}</span><h3>${esc(a.title)}</h3><p>${esc(a.summary)}</p>${sourceList(a.sources)}</div>
           </li>`).join("")}</ul>
+        ${m.activity ? `<p class="when">国会での発言 ${m.activity.speeches}回（${esc(m.activity.since)}以降）・<a href="${esc(safeUrl(m.activity.source.url))}" target="_blank" rel="noopener">${esc(m.activity.source.title)}</a></p>` : ""}
       </div>
-      <section class="howto">
-        <h2>この図鑑の読み方</h2>
-        <ul>
-          <li>「公約クエスト」は本人が選挙公報や発言で約束したこと。状況は AI が資料から判定し、根拠の出典を添えています。</li>
-          <li>根拠が見つからないものは「判定できず」にしています。「動きなし」は資料の範囲で動きを確認できないという意味です。</li>
-          <li>星の数は当選回数です。議員どうしの優劣をつけるものではありません。</li>
-        </ul>
-      </section>
     </div>`;
     detail.hidden = false;
     document.body.style.overflow = "hidden";
     detail.querySelector("#close").focus();
-    if (location.hash !== `#${m.id}`) history.replaceState(null, "", `#${m.id}`);
+    detail.dataset.from = id;
   }
 
   function closeDetail() {
-    const id = location.hash.slice(1);
+    const id = detail.dataset.from;
     detail.hidden = true;
     detail.innerHTML = "";
     document.body.style.overflow = "";
-    history.replaceState(null, "", location.pathname + location.search);
-    grid.querySelector(`[data-id="${CSS.escape(id)}"]`)?.focus();
+    root.querySelector(`[data-open="${CSS.escape(id ?? "")}"]`)?.focus();
   }
 
-  root.querySelector("#q").addEventListener("input", (e) => { state.q = e.target.value.trim(); renderGrid(); });
-  root.querySelector("#party").addEventListener("change", (e) => { state.party = e.target.value; renderGrid(); });
-  root.querySelectorAll("[data-house]").forEach((b) => b.addEventListener("click", () => {
-    state.house = b.dataset.house;
-    root.querySelectorAll("[data-house]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-    renderGrid();
-  }));
-  grid.addEventListener("click", (e) => {
-    const card = e.target.closest(".card");
-    if (card) openDetail(card.dataset.id);
+  // ---- 操作 ----
+  const set = (patch) => { Object.assign(state, patch); render(); };
+  $("#ax-x").addEventListener("change", (e) => set({ x: e.target.value, cell: null }));
+  $("#ax-y").addEventListener("change", (e) => set({ y: e.target.value, cell: null }));
+  $("#ax-color").addEventListener("change", (e) => set({ color: e.target.value }));
+  $("#swap").addEventListener("click", () => {
+    set({ x: state.y, y: state.x, cell: null });
+    $("#ax-x").value = state.x;
+    $("#ax-y").value = state.y;
   });
+  $("#q").addEventListener("input", (e) => set({ q: e.target.value.trim(), cell: null, limit: 40 }));
+  root.querySelectorAll("[data-house]").forEach((b) => b.addEventListener("click", () => {
+    root.querySelectorAll("[data-house]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    set({ house: b.dataset.house, cell: null, limit: 40 });
+  }));
+  root.querySelector(".presets").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-preset]");
+    if (!b) return;
+    const p = PRESETS[Number(b.dataset.preset)];
+    $("#ax-x").value = p.x; $("#ax-y").value = p.y; $("#ax-color").value = p.color;
+    set({ x: p.x, y: p.y, color: p.color, cell: null, limit: 40 });
+  });
+
+  matrix.addEventListener("click", (e) => {
+    const dot = e.target.closest("i[data-id]");
+    if (dot) return openDetail(dot.dataset.id);
+    const cell = e.target.closest(".cell");
+    if (!cell) return;
+    const key = cell.dataset.key;
+    set({ cell: state.cell === key ? null : key, limit: 40 });
+    $("#group").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  });
+  matrix.addEventListener("pointermove", (e) => {
+    const dot = e.target.closest("i[data-id]");
+    if (!dot) { tip.hidden = true; return; }
+    const m = byMember.get(dot.dataset.id);
+    const C = byId.get(state.color);
+    tip.innerHTML = `<b>${esc(m.name)}</b><span>${esc(data.partyById.get(m.party)?.name)}・${esc(m.house)}</span>${state.color !== "none" ? `<span>${esc(C.label)}：${esc(C.get(m))}</span>` : ""}`;
+    tip.hidden = false;
+    const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
+    const y = e.clientY + 16 + tip.offsetHeight > innerHeight ? e.clientY - tip.offsetHeight - 10 : e.clientY + 16;
+    tip.style.transform = `translate(${x}px, ${y}px)`;
+  });
+  matrix.addEventListener("pointerleave", () => { tip.hidden = true; });
+
+  $("#group").addEventListener("click", (e) => {
+    const open = e.target.closest("[data-open]");
+    if (open) return openDetail(open.dataset.open);
+    if (e.target.closest("#clear-cell")) return set({ cell: null });
+    if (e.target.closest("#more")) return set({ limit: state.limit + 80 });
+  });
+  $("#group").addEventListener("change", (e) => { if (e.target.id === "sort") set({ sort: e.target.value }); });
+
   detail.addEventListener("click", (e) => {
     if (e.target === detail || e.target.closest("#close")) return closeDetail();
     const tab = e.target.closest("[data-tab]");
@@ -221,9 +473,7 @@ function renderApp(root, data) {
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !detail.hidden) closeDetail(); });
 
-  renderGrid();
-  const start = location.hash.slice(1);
-  if (start) openDetail(start);
+  render();
 }
 
 async function boot() {
