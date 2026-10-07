@@ -144,3 +144,22 @@ test("質問主意書の一覧を読む", () => {
   const [s] = sanQuestions([["提出回次", "件名", "提出者", "提出日", "明細URL"], ["221", "Q", "小西　洋之", "2026-07-24", "https://y"], ["218", "古い", "誰か", "2025-01-01", "https://z"]], 219);
   assert.deepEqual([s.session, s.submitters, s.date], [221, ["小西洋之"], "2026-07-24"]);
 });
+
+import { parseBillTextLinks } from "../scripts/activity-lib.js";
+
+test("議案本文情報一覧から、要綱と本文のリンクを拾う", () => {
+  const base = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/g22105026.htm";
+  const html = `<a HREF="./houan/g22105026.htm">提出時法律案</a> <a HREF="./youkou/g22105026.htm">要綱</a> <a HREF="./syuuseian/13_8A62.htm">修正案1</a>`;
+  assert.deepEqual(parseBillTextLinks(html, base), {
+    outlineUrl: "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/youkou/g22105026.htm",
+    textUrl: "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/houan/g22105026.htm",
+  });
+  assert.deepEqual(parseBillTextLinks(`<a href="./houan/g1.htm">本文</a>`, base).outlineUrl, null);
+});
+
+test("質問主意書の一覧から、質問と答弁の本文リンクも拾う", () => {
+  const html = `<tr><td>1</td><td>Q</td><td>緒方林太郎君</td><td>答弁受理</td><td><a href="221001.htm">経過</a></td><td><a href="a221001.htm">質問 (HTML)</a></td><td><a href="../../../x/a221001.pdf/$File/a221001.pdf">PDF</a></td><td><a href="b221001.htm">答弁 (HTML)</a></td></tr>`;
+  const [q] = parseShugiinQuestionList(html, "https://www.shugiin.go.jp/internet/itdb_shitsumon.nsf/html/shitsumon/kaiji221_l.htm");
+  assert.equal(q.questionUrl, "https://www.shugiin.go.jp/internet/itdb_shitsumon.nsf/html/shitsumon/a221001.htm");
+  assert.equal(q.answerUrl, "https://www.shugiin.go.jp/internet/itdb_shitsumon.nsf/html/shitsumon/b221001.htm");
+});

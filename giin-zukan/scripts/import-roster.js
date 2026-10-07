@@ -22,7 +22,7 @@ import {
   NATIONAL, classifyCareer, normKana, normName, parseBirth, parseShugiinKaiha, parseShugiinList, parseShugiinProfile, regionOf,
   birthPrefecture, electedBy, electionYears, hometown, ministerialLevel, studiedAbroad, university,
 } from "./roster-lib.js";
-import { billsFrom, parseShugiinQuestionDate, parseShugiinQuestionList, sanQuestions } from "./activity-lib.js";
+import { billsFrom, parseBillTextLinks, parseShugiinQuestionDate, parseShugiinQuestionList, sanQuestions } from "./activity-lib.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CACHE = join(ROOT, ".cache");
@@ -144,6 +144,11 @@ async function loadDynasty() {
 async function loadActivity() {
   const raw = (repo, file) => cached(`https://raw.githubusercontent.com/smartnews-smri/${repo}/main/data/${file}`);
   const bills = billsFrom(JSON.parse(await raw("house-of-representatives", "gian.json")), JSON.parse(await raw("house-of-councillors", "gian.json")), SINCE_SESSION);
+  // 法案の要綱・本文へのリンク（本文情報一覧のページから拾う）
+  for (const b of bills) {
+    if (!b.textIndexUrl) continue;
+    Object.assign(b, parseBillTextLinks(await cached(b.textIndexUrl, { encoding: "shift_jis" }), b.textIndexUrl));
+  }
   const questions = sanQuestions(JSON.parse(await raw("house-of-councillors", "syuisyo.json")), SINCE_SESSION);
   for (let session = SINCE_SESSION; ; session++) {
     const url = `https://www.shugiin.go.jp/internet/itdb_shitsumon.nsf/html/shitsumon/kaiji${session}_l.htm`;
@@ -267,6 +272,12 @@ async function main() {
         title: b.title,
         summary: b.lead === key ? `${b.kind}の筆頭提出者として提出した。` : `${b.kind}の共同提出者（${b.sponsors.length}人）に名を連ねた。`,
         sources: [{ title: `${b.house} 議案経過（${b.kind}）`, url: b.url, date: b.date ?? "", quote: b.title }],
+        links: [
+          b.outlineUrl && { label: "要綱", url: b.outlineUrl },
+          b.textUrl && { label: "本文", url: b.textUrl },
+          !b.outlineUrl && !b.textUrl && b.textIndexUrl && { label: "本文情報", url: b.textIndexUrl },
+          { label: "経過", url: b.url },
+        ].filter(Boolean),
       })),
       ...questions.map((q) => ({
         type: "written_question",
@@ -274,6 +285,11 @@ async function main() {
         title: q.title,
         summary: q.submitters.length > 1 ? `ほか${q.submitters.length - 1}人と連名で提出した。` : "政府に文書で質問し、答弁書を求めた。",
         sources: [{ title: `${q.house} 質問主意書`, url: q.url, date: q.date ?? "", quote: q.title }],
+        links: [
+          q.questionUrl && { label: "質問", url: q.questionUrl },
+          q.answerUrl && { label: "答弁", url: q.answerUrl },
+          { label: "経過", url: q.url },
+        ].filter(Boolean),
       })),
     ].sort((a, b) => b.date.localeCompare(a.date)).map((a, i) => ({ id: `a${i + 1}`, ...a }));
     const counted = (x) => x.session >= COUNT_SESSION;

@@ -36,6 +36,7 @@ export function billsFrom(shuGian, sanGian, sinceSession) {
       date: r["議案種類"] === "衆法" ? warekiDate(r["衆議院議案受理年月日"]) : sanDate.get(`${r["提出回次"]}-${r["番号"]}`) ?? null,
       session: Number(r["提出回次"]),
       url: r["経過情報URL"],
+      textIndexUrl: r["本文情報URL"] || null,
     });
   }
   return [...seen.values()];
@@ -45,7 +46,16 @@ export function billsFrom(shuGian, sanGian, sinceSession) {
 export function sanQuestions(syuisyo, sinceSession) {
   return table(syuisyo)
     .filter((r) => Number(r["提出回次"]) >= sinceSession)
-    .map((r) => ({ house: "参議院", session: Number(r["提出回次"]), title: r["件名"], submitters: splitNames(r["提出者"]), date: r["提出日"], url: r["明細URL"] }));
+    .map((r) => ({
+      house: "参議院",
+      session: Number(r["提出回次"]),
+      title: r["件名"],
+      submitters: splitNames(r["提出者"]),
+      date: r["提出日"],
+      url: r["明細URL"],
+      questionUrl: r["質問本文（html）"] || null,
+      answerUrl: r["答弁本文（html）"] || null,
+    }));
 }
 
 // 衆議院「質問主意書・答弁書一覧」（回次ごとのページ）
@@ -57,7 +67,17 @@ export function parseShugiinQuestionList(html, baseUrl) {
     const text = (h) => h.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     const keika = tds[4].match(/href="([^"]+)"/i)?.[1];
     if (!/^\d+$/.test(text(tds[0])) || !keika) continue;
-    out.push({ house: "衆議院", title: text(tds[1]), submitters: splitNames(text(tds[2])), keikaUrl: new URL(keika, baseUrl).href });
+    // 質問・答弁の本文（HTML 版）。答弁がまだのときはリンクがない
+    const hrefs = [...tr.matchAll(/href="([^"]+)"/gi)].map((m) => m[1]);
+    const abs = (h) => (h ? new URL(h, baseUrl).href : null);
+    out.push({
+      house: "衆議院",
+      title: text(tds[1]),
+      submitters: splitNames(text(tds[2])),
+      keikaUrl: abs(keika),
+      questionUrl: abs(hrefs.find((h) => /(^|\/)a\d+\.htm$/i.test(h))),
+      answerUrl: abs(hrefs.find((h) => /(^|\/)b\d+\.htm$/i.test(h))),
+    });
   }
   return out;
 }
@@ -66,4 +86,14 @@ export function parseShugiinQuestionList(html, baseUrl) {
 export function parseShugiinQuestionDate(html) {
   const t = String(html).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
   return warekiDate(t.match(/提出年月日\s*((?:平成|令和)\s*\S+?年\s*\S+?月\s*\S+?日)/)?.[1]);
+}
+
+// 衆議院の「議案本文情報一覧」ページから、要綱と提出時の法律案（本文）のリンクを拾う
+export function parseBillTextLinks(html, baseUrl) {
+  const hrefs = [...String(html).matchAll(/href="([^"]+)"/gi)].map((m) => m[1]);
+  const find = (re) => {
+    const h = hrefs.find((x) => re.test(x));
+    return h ? new URL(h, baseUrl).href : null;
+  };
+  return { outlineUrl: find(/(^|\/)youkou\/[^/]+\.htm$/i), textUrl: find(/(^|\/)houan\/[^/]+\.htm$/i) };
 }

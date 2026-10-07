@@ -249,6 +249,9 @@ export function validateData(data) {
       if (!isDate(a.date ?? "")) err(`${aat}.date`, "YYYY-MM-DD で書く");
       if (!(a.type in ACHIEVEMENT_TYPES)) err(`${aat}.type`, `${Object.keys(ACHIEVEMENT_TYPES).join(" / ")} のどれか`);
       checkSources(a.sources, `${aat}.sources`);
+      (a.links ?? []).forEach((l, li) => {
+        if (!l.label || !/^https?:\/\//.test(l.url ?? "")) err(`${aat}.links[${li}]`, "label と URL が要る");
+      });
     });
   });
   return errors;

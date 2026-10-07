@@ -486,7 +486,9 @@ function renderApp(root, data) {
         ${log.length ? "" : `<p class="empty-note">${m.stats ? "第219回国会（2025年10月）以降、この議員が提出した議員立法・質問主意書は見つかりませんでした。" : "法案・質問主意書などの活動ログはまだ作成していません。"}</p>`}
         <ul class="log">${log.map((a) => `
           <li><time datetime="${esc(a.date)}">${esc(a.date)}</time>
-            <div class="entry"><span class="type">${esc(TYPE[a.type] ?? a.type)}</span><h3>${esc(a.title)}</h3><p>${esc(a.summary)}</p>${sourceList(a.sources)}</div>
+            <div class="entry"><span class="type">${esc(TYPE[a.type] ?? a.type)}</span><h3>${esc(a.title)}</h3><p>${esc(a.summary)}</p>${a.links?.length
+              ? `<nav class="doc-links" aria-label="${esc(a.title)}の資料">${a.links.map((l) => `<a href="${esc(safeUrl(l.url))}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}</nav>`
+              : sourceList(a.sources)}</div>
           </li>`).join("")}</ul>
         ${m.activity ? `<p class="when">国会での発言 ${m.activity.speeches}回（${esc(m.activity.since)}以降）・<a href="${esc(safeUrl(m.activity.source.url))}" target="_blank" rel="noopener">${esc(m.activity.source.title)}</a></p>` : ""}
       </div>
